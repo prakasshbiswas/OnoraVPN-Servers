@@ -128,31 +128,67 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 5. Fleet Size Guarantee:
-    // Ensure fleet maintains a healthy number of servers (at least 20 servers or original size)
-    const targetSize = Math.max(20, currentFleet.length);
+    // 5. Auto-Discover New Countries:
+    // If VPN Gate live feed has countries not yet in the active fleet (e.g. Lithuania, Thailand),
+    // automatically add their top server so users always get fresh new international locations!
+    const activeCountries = new Set(activeServers.map((s) => s.countryCode.toUpperCase()));
+
+    for (let i = candidatePool.length - 1; i >= 0; i--) {
+      const candidate = candidatePool[i];
+      const cc = candidate.countryCode.toUpperCase();
+      if (!activeCountries.has(cc) && activeServers.length < 50) {
+        candidatePool.splice(i, 1);
+        activeCountries.add(cc);
+        const newServer: VpnServer = {
+          id: `${candidate.countryCode.toLowerCase()}_${candidate.ip.replace(/\./g, '_')}`,
+          country: candidate.country,
+          countryCode: candidate.countryCode,
+          city: candidate.city,
+          flag: candidate.flag,
+          flagUrl: candidate.flagUrl,
+          premium: false,
+          username: 'vpn',
+          password: 'vpn',
+          ping: candidate.ping,
+          proto: 'tcp',
+          ip: candidate.ip,
+          port: 443,
+          ovpnBase64: candidate.ovpnBase64,
+          updatedAt: new Date().toISOString(),
+        };
+        activeServers.push(newServer);
+        activeIps.add(candidate.ip);
+        addedReplacements.push(newServer);
+      }
+    }
+
+    // 6. Fleet Size Guarantee:
+    // Ensure fleet maintains at least 25 healthy servers
+    const targetSize = Math.max(25, currentFleet.length);
     while (activeServers.length < targetSize && candidatePool.length > 0) {
       const topCandidate = candidatePool.shift()!;
-      const newServer: VpnServer = {
-        id: `${topCandidate.countryCode.toLowerCase()}_${topCandidate.ip.replace(/\./g, '_')}`,
-        country: topCandidate.country,
-        countryCode: topCandidate.countryCode,
-        city: topCandidate.city,
-        flag: topCandidate.flag,
-        flagUrl: topCandidate.flagUrl,
-        premium: false,
-        username: 'vpn',
-        password: 'vpn',
-        ping: topCandidate.ping,
-        proto: 'tcp',
-        ip: topCandidate.ip,
-        port: 443,
-        ovpnBase64: topCandidate.ovpnBase64,
-        updatedAt: new Date().toISOString(),
-      };
-      activeServers.push(newServer);
-      activeIps.add(topCandidate.ip);
-      addedReplacements.push(newServer);
+      if (!activeIps.has(topCandidate.ip)) {
+        const newServer: VpnServer = {
+          id: `${topCandidate.countryCode.toLowerCase()}_${topCandidate.ip.replace(/\./g, '_')}`,
+          country: topCandidate.country,
+          countryCode: topCandidate.countryCode,
+          city: topCandidate.city,
+          flag: topCandidate.flag,
+          flagUrl: topCandidate.flagUrl,
+          premium: false,
+          username: 'vpn',
+          password: 'vpn',
+          ping: topCandidate.ping,
+          proto: 'tcp',
+          ip: topCandidate.ip,
+          port: 443,
+          ovpnBase64: topCandidate.ovpnBase64,
+          updatedAt: new Date().toISOString(),
+        };
+        activeServers.push(newServer);
+        activeIps.add(topCandidate.ip);
+        addedReplacements.push(newServer);
+      }
     }
 
     // Sort final fleet by lowest ping first
