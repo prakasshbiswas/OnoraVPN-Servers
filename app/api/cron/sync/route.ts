@@ -4,8 +4,6 @@ import { getServers, persistServers, sortByPing } from '@/lib/storage';
 import { isAuthenticated } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
 
-export const dynamic = 'force-dynamic';
-
 // Supports Vercel Cron, external crons (UptimeRobot, cron-job.org), and Admin session
 export async function GET(req: NextRequest) {
   // 1. Verify Authorization
