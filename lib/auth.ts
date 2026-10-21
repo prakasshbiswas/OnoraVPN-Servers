@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 const COOKIE_NAME = 'vpn_admin_session';
 
 export function getAdminPassword(): string {
-  return process.env.ADMIN_PASSWORD || 'admin123';
+  const raw = process.env.ADMIN_PASSWORD || 'admin123';
+  return raw.trim().replace(/^["']|["']$/g, '');
 }
 
 export function generateToken(password: string): string {
@@ -25,7 +26,9 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function setAdminSession(password: string): Promise<boolean> {
-  if (password !== getAdminPassword()) {
+  const expected = getAdminPassword();
+  const input = (password || '').trim();
+  if (input !== expected) {
     return false;
   }
   const token = generateToken(password);
