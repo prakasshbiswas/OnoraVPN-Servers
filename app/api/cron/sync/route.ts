@@ -140,9 +140,10 @@ export async function GET(req: NextRequest) {
     }
 
     // 6. Fleet Size Guarantee:
-    // Ensure fleet maintains at least 25 healthy servers
-    const targetSize = Math.max(25, currentFleet.length);
+    // Expand and maintain a healthy, diverse fleet of 45-50 servers
+    const targetSize = Math.min(50, Math.max(45, currentFleet.length));
     while (activeServers.length < targetSize && candidatePool.length > 0) {
+
       const topCandidate = candidatePool.shift()!;
       if (!activeIps.has(topCandidate.ip)) {
         const newServer: VpnServer = {

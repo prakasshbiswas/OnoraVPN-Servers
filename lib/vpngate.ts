@@ -94,13 +94,13 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
     // Sort by best score / lowest ping
     parsedServers.sort((a, b) => b.score - a.score || a.ping - b.ping);
 
-    // Keep up to 3 best unique IP servers per country
+    // Keep up to 6 best unique IP servers per country
     const countryCounts = new Map<string, number>();
     const result: VpnGateServerItem[] = [];
 
     for (const srv of parsedServers) {
       const count = countryCounts.get(srv.countryCode) || 0;
-      if (count < 3) {
+      if (count < 6) {
         countryCounts.set(srv.countryCode, count + 1);
         result.push({
           ...srv,
@@ -108,6 +108,7 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
         });
       }
     }
+
 
     return result;
   } catch (err) {
