@@ -130,20 +130,20 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
   return (
     <div className="mb-8">
       {!isOpen ? (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-slate-900 border border-cyan-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-cyan-50/80 via-blue-50/50 to-slate-50 dark:from-blue-950/40 dark:via-cyan-950/30 dark:to-slate-900 border border-cyan-200 dark:border-cyan-500/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shrink-0">
               <Zap className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-sm flex items-center space-x-2">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
                 <span>VPN Gate Live API Discovery</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 font-semibold border border-cyan-200 dark:border-cyan-500/30">
                   Multiple IPs Supported
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">
-                Discover live servers from <code className="text-cyan-300">vpngate.net/api/iphone/</code>. You can replace dead servers OR add new IPs alongside existing ones.
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                Discover live servers from <code className="text-cyan-700 dark:text-cyan-300 font-semibold">vpngate.net/api/iphone/</code>. You can replace dead servers OR add new IPs alongside existing ones.
               </p>
             </div>
           </div>
@@ -152,22 +152,22 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
             onClick={handleFetch}
             disabled={loading}
             id="btn-scan-vpngate"
-            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center space-x-2 transition-all shadow-lg shadow-cyan-500/20 shrink-0"
+            className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white dark:bg-cyan-500 dark:hover:bg-cyan-400 dark:text-slate-950 font-bold text-xs flex items-center space-x-2 transition-all shadow-md shadow-cyan-600/10 dark:shadow-cyan-500/20 shrink-0"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             <span>Scan Live Servers</span>
           </button>
         </div>
       ) : (
-        <div className="rounded-2xl bg-slate-900/90 border border-cyan-500/30 p-6 backdrop-blur-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <div className="rounded-2xl bg-white dark:bg-slate-900/90 border border-cyan-200 dark:border-cyan-500/30 p-6 shadow-lg shadow-slate-200/50 dark:shadow-none backdrop-blur-xl transition-all">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-sm">Live Servers from VPN Gate Official API</h3>
-                <p className="text-xs text-slate-400">Multiple unique IP gateways available per country</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Live Servers from VPN Gate Official API</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Multiple unique IP gateways available per country</p>
               </div>
             </div>
 
@@ -177,13 +177,13 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                   onClick={handleImportAll}
                   disabled={importingAll}
                   id="btn-auto-add-all-vpngate"
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white dark:from-cyan-500 dark:to-blue-600 dark:text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-cyan-600/20 disabled:opacity-50"
                   title="Automatically add all new servers from this scan to your active fleet"
                 >
                   {importingAll ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Zap className="w-3.5 h-3.5 text-slate-950" />
+                    <Zap className="w-3.5 h-3.5" />
                   )}
                   <span>Auto-Add All ({servers.filter((s) => !s.exactIpInFleet).length})</span>
                 </button>
@@ -192,15 +192,15 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               <button
                 onClick={handleFetch}
                 disabled={loading}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs flex items-center space-x-1"
+                className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs flex items-center space-x-1"
                 title="Refresh feed"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cyan-600 dark:text-cyan-400' : ''}`} />
                 <span className="hidden sm:inline">Refresh</span>
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-800"
+                className="px-2.5 py-1 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Hide
               </button>
@@ -209,8 +209,8 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
 
           {loading ? (
             <div className="py-12 text-center flex flex-col items-center justify-center space-y-2">
-              <RefreshCw className="w-7 h-7 text-cyan-400 animate-spin" />
-              <span className="text-xs text-slate-400">Querying live CSV feed from vpngate.net...</span>
+              <RefreshCw className="w-7 h-7 text-cyan-600 dark:text-cyan-400 animate-spin" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">Querying live CSV feed from vpngate.net...</span>
             </div>
           ) : servers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[460px] overflow-y-auto pr-1">
@@ -221,13 +221,13 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                 return (
                   <div
                     key={srv.id}
-                    className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-all text-xs"
+                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 shadow-xs transition-all text-xs"
                   >
                     <div>
                       {/* Flag and Country Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2.5">
-                          <div className="w-7 h-5 rounded overflow-hidden bg-slate-800 border border-slate-700/80 shrink-0">
+                          <div className="w-7 h-5 rounded overflow-hidden bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700/80 shrink-0">
                             <img
                               src={srv.flagUrl || `https://flagcdn.com/w80/${srv.countryCode.toLowerCase()}.png`}
                               alt={srv.country}
@@ -236,36 +236,36 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                             />
                           </div>
                           <div>
-                            <span className="font-bold text-white">{srv.country}</span>
-                            <span className="ml-1 text-[10px] text-slate-400 font-mono">({srv.countryCode})</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{srv.country}</span>
+                            <span className="ml-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">({srv.countryCode})</span>
                           </div>
                         </div>
 
                         {/* Status Badge */}
                         {srv.exactIpInFleet ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 font-semibold">
                             ✓ In Fleet
                           </span>
                         ) : srv.countryInFleet ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-cyan-300 border border-cyan-500/20 font-semibold">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/20 font-semibold">
                             New IP
                           </span>
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                             Available
                           </span>
                         )}
                       </div>
 
                       {/* Ping and IP info */}
-                      <div className="flex items-center space-x-3 text-slate-400 mb-3">
+                      <div className="flex items-center space-x-3 text-slate-500 dark:text-slate-400 mb-3">
                         <div className="flex items-center space-x-1">
-                          <Wifi className="w-3 h-3 text-emerald-400" />
-                          <span>{srv.ping} ms</span>
+                          <Wifi className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{srv.ping} ms</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Globe className="w-3 h-3 text-cyan-400" />
-                          <span className="truncate max-w-[140px] font-mono text-[11px] text-slate-300">
+                          <Globe className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                          <span className="truncate max-w-[140px] font-mono text-[11px] text-slate-700 dark:text-slate-300">
                             {srv.ip}
                           </span>
                         </div>
@@ -273,9 +273,9 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/60">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/60">
                       {srv.exactIpInFleet ? (
-                        <div className="w-full py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-emerald-400 text-center text-[11px] font-semibold flex items-center justify-center space-x-1">
+                        <div className="w-full py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 text-center text-[11px] font-semibold flex items-center justify-center space-x-1">
                           <Check className="w-3 h-3" />
                           <span>Already in Fleet</span>
                         </div>
@@ -285,12 +285,12 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           <button
                             onClick={() => handleImport(srv, false, false)}
                             disabled={isImporting}
-                            className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1 shadow-sm"
+                            className="flex-1 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white dark:bg-cyan-500 dark:hover:bg-cyan-400 dark:text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1 shadow-xs"
                             title="Add this IP as an additional server for this country"
                           >
                             {isSuccess ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-950" />
+                                <Check className="w-3 h-3 text-white" />
                                 <span>Added!</span>
                               </>
                             ) : isImporting ? (
@@ -306,7 +306,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           <button
                             onClick={() => handleImport(srv, false, true)}
                             disabled={isImporting}
-                            className="py-1.5 px-2.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-bold text-[11px] transition-all flex items-center space-x-1"
+                            className="py-1.5 px-2.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30 dark:border-amber-500/30 font-bold text-[11px] transition-all flex items-center space-x-1"
                             title="Replace the old server for this country with this IP"
                           >
                             <RotateCw className="w-3 h-3" />
@@ -316,7 +316,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           <button
                             onClick={() => handleImport(srv, true, false)}
                             disabled={isImporting}
-                            className="px-2 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 font-bold text-[11px] transition-all"
+                            className="px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20 dark:border-amber-500/30 font-bold text-[11px] transition-all"
                             title="Add as VIP server"
                           >
                             + VIP
@@ -328,11 +328,11 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           <button
                             onClick={() => handleImport(srv, false, false)}
                             disabled={isImporting}
-                            className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1"
+                            className="flex-1 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white dark:bg-cyan-500 dark:hover:bg-cyan-400 dark:text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1 shadow-xs"
                           >
                             {isSuccess ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-950" />
+                                <Check className="w-3 h-3 text-white" />
                                 <span>Added!</span>
                               </>
                             ) : isImporting ? (
@@ -345,7 +345,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           <button
                             onClick={() => handleImport(srv, true, false)}
                             disabled={isImporting}
-                            className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 font-bold text-[11px] transition-all"
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20 dark:border-amber-500/30 font-bold text-[11px] transition-all"
                             title="Add as VIP Server"
                           >
                             + VIP

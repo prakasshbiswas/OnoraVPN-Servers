@@ -181,17 +181,17 @@ export default function DashboardPage() {
 
   if (isLoading || isAuthenticated === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#090d16]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#090d16]">
         <div className="flex flex-col items-center space-y-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-cyan-400" />
-          <span className="text-xs text-slate-400">Loading VPNx Server Control...</span>
+          <RefreshCw className="w-8 h-8 animate-spin text-cyan-600 dark:text-cyan-400" />
+          <span className="text-xs text-slate-500 dark:text-slate-400">Loading VPNx Server Control...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       {/* Navbar */}
       <Navbar
         onLogout={handleLogout}
@@ -205,14 +205,14 @@ export default function DashboardPage() {
 
         {/* Auto Sync Result Banner */}
         {autoSyncBanner && (
-          <div className="mb-6 p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-between backdrop-blur-md">
+          <div className="mb-6 p-4 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/40 text-cyan-800 dark:text-cyan-300 text-xs flex items-center justify-between shadow-xs">
             <div className="flex items-center space-x-2.5">
-              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+              <ShieldCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
               <span>{autoSyncBanner}</span>
             </div>
             <button
               onClick={() => setAutoSyncBanner(null)}
-              className="text-cyan-400 hover:text-cyan-200"
+              className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-200"
             >
               <X className="w-4 h-4" />
             </button>
@@ -226,8 +226,8 @@ export default function DashboardPage() {
         <div className="mb-10">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-lg font-bold text-white">Manual .ovpn File Upload</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Manual .ovpn File Upload</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Drop any custom .ovpn file from VPN Gate, VPNBook, or VPS. Existing servers for that country will be automatically replaced.
               </p>
             </div>
@@ -236,16 +236,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Server List Section */}
-        <div className="pt-4 border-t border-slate-800">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                 <span>Active Server Fleet</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-cyan-400 border border-slate-700">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-cyan-700 dark:text-cyan-400 border border-slate-200 dark:border-slate-700 font-mono">
                   {filteredServers.length}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Manage live locations, delete dead servers, or toggle VIP status.
               </p>
             </div>
@@ -257,13 +257,13 @@ export default function DashboardPage() {
                 onClick={handleAutoPurgeSync}
                 disabled={isAutoSyncing}
                 id="btn-auto-purge-sync"
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/50 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 text-xs font-semibold transition-all shadow-xs disabled:opacity-50"
                 title="Automatically checks all servers against live VPN Gate feed and purges dead ones"
               >
                 {isAutoSyncing ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 )}
                 <span>{isAutoSyncing ? 'Purging Dead...' : 'Auto-Purge & Heal'}</span>
               </button>
@@ -275,19 +275,19 @@ export default function DashboardPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search country or city..."
-                  className="pl-9 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-36 sm:w-48"
+                  className="pl-9 pr-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 w-36 sm:w-48 shadow-xs"
                 />
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+              <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
                 <button
                   onClick={() => setFilter('all')}
                   className={`px-3 py-1 rounded-lg font-medium transition-all ${
                     filter === 'all'
-                      ? 'bg-cyan-500 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-cyan-600 text-white font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   All ({servers.length})
@@ -296,8 +296,8 @@ export default function DashboardPage() {
                   onClick={() => setFilter('free')}
                   className={`px-3 py-1 rounded-lg font-medium transition-all ${
                     filter === 'free'
-                      ? 'bg-emerald-500 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   Free ({servers.filter((s) => !s.premium).length})
@@ -306,8 +306,8 @@ export default function DashboardPage() {
                   onClick={() => setFilter('vip')}
                   className={`px-3 py-1 rounded-lg font-medium transition-all ${
                     filter === 'vip'
-                      ? 'bg-amber-500 text-slate-950 font-bold'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-500 text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   VIP ({servers.filter((s) => s.premium).length})
@@ -315,13 +315,13 @@ export default function DashboardPage() {
               </div>
 
               {/* View Switcher (Rows vs Grid) */}
-              <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+              <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
                 <button
                   onClick={() => setViewMode('rows')}
                   className={`p-1.5 rounded-lg transition-all ${
                     viewMode === 'rows'
-                      ? 'bg-cyan-500 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-cyan-600 text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                   title="Rows View (List)"
                 >
@@ -331,8 +331,8 @@ export default function DashboardPage() {
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded-lg transition-all ${
                     viewMode === 'grid'
-                      ? 'bg-cyan-500 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-cyan-600 text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                   title="Grid View (Cards)"
                 >
@@ -343,13 +343,13 @@ export default function DashboardPage() {
               {/* Copy Full JSON button */}
               <button
                 onClick={handleCopyJson}
-                className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-all"
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-medium transition-all"
                 title="Copy entire servers.json array to clipboard"
               >
                 {copiedJson ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied!</span>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied!</span>
                   </>
                 ) : (
                   <>
@@ -387,9 +387,9 @@ export default function DashboardPage() {
               </div>
             )
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-800 p-12 text-center bg-slate-900/20">
-              <Server className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <h4 className="font-semibold text-white text-sm mb-1">No servers found</h4>
+            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center bg-white/50 dark:bg-slate-900/20">
+              <Server className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto mb-3" />
+              <h4 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">No servers found</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {search
                   ? `No servers matching "${search}". Try clearing search.`

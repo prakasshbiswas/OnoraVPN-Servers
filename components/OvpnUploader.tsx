@@ -192,8 +192,8 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center cursor-pointer transition-all ${
             isDragging
-              ? 'border-cyan-400 bg-cyan-950/20 scale-[1.01]'
-              : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/60'
+              ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/20 scale-[1.01]'
+              : 'border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-cyan-400 hover:bg-slate-50 dark:hover:bg-slate-900/60 shadow-xs'
           }`}
         >
           <input
@@ -205,31 +205,31 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
             id="file-upload-input"
           />
 
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-cyan-100 to-blue-100 dark:from-cyan-500/20 dark:to-blue-500/20 border border-cyan-200 dark:border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-sm">
             {isParsing ? (
-              <RefreshCw className="w-8 h-8 animate-spin text-cyan-400" />
+              <RefreshCw className="w-8 h-8 animate-spin text-cyan-600 dark:text-cyan-400" />
             ) : (
-              <UploadCloud className="w-8 h-8 text-cyan-400" />
+              <UploadCloud className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
             )}
           </div>
 
-          <h3 className="text-lg font-semibold text-white mb-1">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
             {isParsing ? 'Parsing .ovpn configuration & detecting GeoIP...' : 'Drop your .ovpn configuration file here'}
           </h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto mb-4">
-            Download free OpenVPN files from <strong className="text-cyan-300">VPN Gate</strong> or VPNBook, drop it here, and the system automatically extracts IP, Country, Flag, and replaces dead servers.
+          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
+            Download free OpenVPN files from <strong className="text-cyan-700 dark:text-cyan-300">VPN Gate</strong> or VPNBook, drop it here, and the system automatically extracts IP, Country, Flag, and replaces dead servers.
           </p>
-          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold hover:bg-cyan-500/20 transition-all">
+          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 text-cyan-700 dark:text-cyan-400 text-xs font-semibold hover:bg-cyan-100 dark:hover:bg-cyan-500/20 transition-all">
             <span>Browse .ovpn File</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </div>
       ) : (
         /* Parsed Preview Card */
-        <div className="rounded-2xl bg-slate-900/90 border border-cyan-500/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-cyan-950/50">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+        <div className="rounded-2xl bg-white dark:bg-slate-900/90 border border-cyan-200 dark:border-cyan-500/40 p-6 sm:p-8 backdrop-blur-xl shadow-xl shadow-slate-200/50 dark:shadow-cyan-950/50 transition-all">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-6">
             <div className="flex items-center space-x-3.5">
-              <div className="w-12 h-8 rounded-md overflow-hidden bg-slate-800 border border-slate-700 shadow-sm shrink-0">
+              <div className="w-12 h-8 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-xs shrink-0">
                 <img
                   src={preview.flagUrl || `https://flagcdn.com/w80/${preview.countryCode.toLowerCase()}.png`}
                   alt={preview.country}
@@ -237,20 +237,20 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
                 />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white flex items-center space-x-2">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                   <span>{preview.country}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-mono">
                     {preview.countryCode}
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Remote: {preview.ip}:{preview.port} ({preview.proto.toUpperCase()})
                 </p>
               </div>
             </div>
             <button
               onClick={handleCancel}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
               title="Cancel"
             >
               <X className="w-5 h-5" />
@@ -259,14 +259,14 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
 
           {/* Replacement Warning if existing server matches */}
           {preview.existingServer && (
-            <div className="mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200">
+            <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/50 text-amber-900 dark:text-amber-200">
               <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-semibold text-sm text-amber-300">
+                  <h4 className="font-semibold text-sm text-amber-900 dark:text-amber-300">
                     Existing Server Found for {preview.country} ({preview.existingServer.city})
                   </h4>
-                  <p className="text-xs text-amber-200/80 mt-1">
+                  <p className="text-xs text-amber-800 dark:text-amber-200/80 mt-1">
                     An older server already exists in your active list. Replacing it will remove the dead IP and update it with this new configuration.
                   </p>
                   <label className="flex items-center space-x-2 mt-3 cursor-pointer">
@@ -274,9 +274,9 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
                       type="checkbox"
                       checked={replaceExisting}
                       onChange={(e) => setReplaceExisting(e.target.checked)}
-                      className="w-4 h-4 rounded text-cyan-500 focus:ring-0 bg-slate-800 border-slate-700"
+                      className="w-4 h-4 rounded text-cyan-600 focus:ring-0 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700"
                     />
-                    <span className="text-xs font-medium text-white">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white">
                       Replace & Overwrite existing {preview.country} server (Recommended)
                     </span>
                   </label>
@@ -288,58 +288,58 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
           {/* Configuration Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">City / Server Display Name</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1.5">City / Server Display Name</label>
               <input
                 type="text"
                 value={customCity}
                 onChange={(e) => setCustomCity(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:border-cyan-500 focus:outline-none"
                 placeholder="e.g. Tokyo (Ultra Fast)"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Estimated Ping (ms)</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1.5">Estimated Ping (ms)</label>
               <input
                 type="number"
                 value={customPing}
                 onChange={(e) => setCustomPing(parseInt(e.target.value, 10) || 45)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:border-cyan-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Username (VPN Gate default: vpn)</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1.5">Username (VPN Gate default: vpn)</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:border-cyan-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Password (VPN Gate default: vpn)</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-400 mb-1.5">Password (VPN Gate default: vpn)</label>
               <input
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:border-cyan-500 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Tier Switch (Free vs VIP) */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-950 border border-slate-800 mb-6">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 mb-6">
             <div className="flex items-center space-x-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPremium ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPremium ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'}`}>
                 {isPremium ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
               </div>
               <div>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   {isPremium ? 'VIP Server (Ad/Subscription Locked)' : 'Free Server (Available to All Users)'}
                 </span>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {isPremium ? 'Users must watch a rewarded ad to unlock' : 'Instant 1-tap connection'}
                 </p>
               </div>
@@ -349,8 +349,8 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
               onClick={() => setIsPremium(!isPremium)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 isPremium
-                  ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-                  : 'bg-slate-800 text-slate-300 hover:text-white'
+                  ? 'bg-amber-500 text-white hover:bg-amber-600'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:bg-slate-300'
               }`}
             >
               {isPremium ? 'VIP Mode' : 'Free Mode'}
@@ -361,7 +361,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
           <div className="flex items-center justify-end space-x-3">
             <button
               onClick={handleCancel}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
             >
               Cancel
             </button>
@@ -369,7 +369,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
               onClick={handleSave}
               disabled={isSaving}
               id="btn-deploy-server"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all flex items-center space-x-2 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-cyan-600/20 transition-all flex items-center space-x-2 disabled:opacity-50"
             >
               {isSaving ? (
                 <>
