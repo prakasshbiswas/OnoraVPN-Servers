@@ -29,7 +29,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
   }, [fleetServers]);
 
   const unaddedCount = useMemo(() => {
-    return servers.filter((s) => !activeIpSet.has(s.ip) && !s.exactIpInFleet).length;
+    return servers.filter((s) => !activeIpSet.has(s.ip)).length;
   }, [servers, activeIpSet]);
 
   const handleFetch = async () => {
@@ -54,8 +54,9 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
   };
 
   const handleImportAll = async () => {
-    const unadded = servers.filter((s) => !activeIpSet.has(s.ip) && !s.exactIpInFleet);
+    const unadded = servers.filter((s) => !activeIpSet.has(s.ip));
     if (unadded.length === 0) return;
+
 
     setImportingAll(true);
     setErrorMessage(null);
@@ -260,8 +261,9 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               {servers.map((srv) => {
                 const isImporting = importingId === srv.id;
                 const isSuccess = successId === srv.id;
-                const isIpInFleet = activeIpSet.has(srv.ip) || !!srv.exactIpInFleet;
-                const isCountryInFleet = activeCountrySet.has(srv.countryCode.toUpperCase()) || !!srv.countryInFleet;
+                const isIpInFleet = activeIpSet.has(srv.ip);
+                const isCountryInFleet = activeCountrySet.has(srv.countryCode.toUpperCase());
+
 
                 return (
                   <div

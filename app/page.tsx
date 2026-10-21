@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
   const loadServers = async () => {
     try {
-      const res = await fetch('/api/servers');
+      const res = await fetch(`/api/servers?t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         setServers(Array.isArray(data) ? data : []);
@@ -65,6 +65,7 @@ export default function DashboardPage() {
       console.error('Failed to load servers:', err);
     }
   };
+
 
   const handleAutoPurgeSync = async () => {
     setIsAutoSyncing(true);
