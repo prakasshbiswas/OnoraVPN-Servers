@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServers, saveServer, deleteServer, toggleServerPremium } from '@/lib/storage';
+import { getServers, saveServer, deleteServer, toggleServerPremium, persistServers } from '@/lib/storage';
 import { isAuthenticated } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
 
@@ -54,6 +54,31 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // Support batch add of multiple servers in 1 click
+    if (Array.isArray(body.servers)) {
+      const current = await getServers();
+      const existingIps = new Set(current.map((s) => s.ip).filter(Boolean));
+      const toAdd: VpnServer[] = [];
+
+      for (const s of body.servers) {
+        if (!existingIps.has(s.ip)) {
+          existingIps.add(s.ip);
+          toAdd.push({
+            ...s,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      const combined = [...current, ...toAdd];
+      await persistServers(combined);
+      return NextResponse.json(
+        { success: true, countAdded: toAdd.length, servers: combined },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
     const server: VpnServer = body.server;
     const replaceCountry = body.replaceCountry ?? true;
 

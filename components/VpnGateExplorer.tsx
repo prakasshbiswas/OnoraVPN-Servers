@@ -14,6 +14,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
   const [loading, setLoading] = useState(false);
   const [servers, setServers] = useState<VpnGateServerItem[]>([]);
   const [importingId, setImportingId] = useState<string | null>(null);
+  const [importingAll, setImportingAll] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
 
   const handleFetch = async () => {
@@ -29,6 +30,47 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
       console.error('Failed to fetch VPN Gate:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImportAll = async () => {
+    const unadded = servers.filter((s) => !s.exactIpInFleet);
+    if (unadded.length === 0) return;
+
+    setImportingAll(true);
+    try {
+      const payload = unadded.map((item) => ({
+        id: item.id,
+        country: item.country,
+        countryCode: item.countryCode,
+        city: item.city,
+        flag: item.flag,
+        flagUrl: item.flagUrl,
+        premium: false,
+        username: 'vpn',
+        password: 'vpn',
+        ping: item.ping,
+        proto: 'tcp',
+        ip: item.ip,
+        port: 443,
+        ovpnBase64: item.ovpnBase64,
+        updatedAt: new Date().toISOString(),
+      }));
+
+      const res = await fetch('/api/servers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ servers: payload }),
+      });
+
+      if (res.ok) {
+        onServerImported();
+        setServers((prev) => prev.map((s) => ({ ...s, exactIpInFleet: true })));
+      }
+    } catch (err) {
+      console.error('Batch import error:', err);
+    } finally {
+      setImportingAll(false);
     }
   };
 
@@ -130,6 +172,23 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
             </div>
 
             <div className="flex items-center space-x-2">
+              {servers.filter((s) => !s.exactIpInFleet).length > 0 && (
+                <button
+                  onClick={handleImportAll}
+                  disabled={importingAll}
+                  id="btn-auto-add-all-vpngate"
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+                  title="Automatically add all new servers from this scan to your active fleet"
+                >
+                  {importingAll ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                  ) : (
+                    <Zap className="w-3.5 h-3.5 text-slate-950" />
+                  )}
+                  <span>Auto-Add All ({servers.filter((s) => !s.exactIpInFleet).length})</span>
+                </button>
+              )}
+
               <button
                 onClick={handleFetch}
                 disabled={loading}
