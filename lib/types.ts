@@ -33,6 +33,22 @@ export interface ParseResult {
   existingServer?: VpnServer | null;
 }
 
+export type ServerSource = 'vpngate' | 'vpnbook' | 'custom';
+
+export function resolveServerSource(server: VpnServer): ServerSource {
+  if (server.source === 'vpnbook' || server.id?.startsWith('vpnbook_') || server.username === 'vpnbook') {
+    return 'vpnbook';
+  }
+  if (
+    server.source === 'vpngate' ||
+    (server.username === 'vpn' && server.password === 'vpn') ||
+    (server.id && !server.id.startsWith('vpnbook_') && server.id.includes('_'))
+  ) {
+    return 'vpngate';
+  }
+  return 'custom';
+}
+
 export interface AuthSession {
   authenticated: boolean;
 }

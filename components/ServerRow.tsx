@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Lock, Unlock, Copy, Check, Globe, Activity, Wifi } from 'lucide-react';
-import { VpnServer } from '@/lib/types';
+import { Trash2, Lock, Unlock, Copy, Check, Globe, Activity, Wifi, Zap, Shield, UploadCloud } from 'lucide-react';
+import { VpnServer, resolveServerSource } from '@/lib/types';
 import { getFlagUrl } from '@/lib/geoip';
 
 interface ServerRowProps {
@@ -28,11 +28,12 @@ export const ServerRow: React.FC<ServerRowProps> = ({
   };
 
   const flagSrc = server.flagUrl || getFlagUrl(server.countryCode);
+  const source = resolveServerSource(server);
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs hover:shadow-sm transition-all gap-4 group">
-      {/* 1. Country & Flag */}
-      <div className="flex items-center space-x-3.5 min-w-[240px]">
+      {/* 1. Country, Flag & Provider Badge */}
+      <div className="flex items-center space-x-3.5 min-w-[260px]">
         {/* Country Flag Image */}
         <div className="w-10 h-7 rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shrink-0 shadow-xs flex items-center justify-center">
           {!imgError ? (
@@ -54,6 +55,32 @@ export const ServerRow: React.FC<ServerRowProps> = ({
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 shrink-0">
               {server.countryCode}
             </span>
+            {/* Provider Badge */}
+            {source === 'vpngate' ? (
+              <span
+                title="Sourced from VPN Gate Live Discovery"
+                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 shrink-0"
+              >
+                <Zap className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                <span>VPN Gate</span>
+              </span>
+            ) : source === 'vpnbook' ? (
+              <span
+                title="Sourced from VPNBook OpenVPN Fleet"
+                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 shrink-0"
+              >
+                <Shield className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                <span>VPNBook</span>
+              </span>
+            ) : (
+              <span
+                title="Manual / Custom Uploaded Server"
+                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0"
+              >
+                <UploadCloud className="w-2.5 h-2.5 text-slate-500" />
+                <span>Custom</span>
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[220px]">{server.city}</p>
         </div>

@@ -35,15 +35,21 @@ interface VpnBookServerStatus {
 interface VpnBookExplorerProps {
   onServerImported?: () => void;
   fleetServers?: VpnServer[];
+  defaultCollapsed?: boolean;
 }
 
 export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
   onServerImported,
   fleetServers = [],
+  defaultCollapsed = true,
 }) => {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  useEffect(() => {
+    setCollapsed(defaultCollapsed);
+  }, [defaultCollapsed]);
   const [protocol, setProtocol] = useState<'tcp443' | 'tcp80' | 'udp53' | 'udp25000'>('tcp443');
   const [password, setPassword] = useState('dhnfcw2');
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | undefined>('Oct 18, 2026');
@@ -250,7 +256,7 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
         {/* Dedicated Copy Links Strip */}
         <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap items-center gap-2 text-[11px]">
           <span className="text-slate-400 font-medium">Quick Copy Links:</span>
-          
+
           <button
             onClick={handleCopyApiUrl}
             className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition"
@@ -310,11 +316,10 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
             {servers.map((s) => (
               <div
                 key={s.id}
-                className={`p-3 rounded-xl border transition-all ${
-                  s.inFleet
+                className={`p-3 rounded-xl border transition-all ${s.inFleet
                     ? 'border-blue-300 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/20'
                     : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center space-x-1.5">

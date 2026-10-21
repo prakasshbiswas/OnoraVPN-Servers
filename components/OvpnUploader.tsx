@@ -114,6 +114,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
         ip: preview.ip,
         port: preview.port,
         ovpnBase64: preview.ovpnBase64,
+        source: 'custom',
         updatedAt: new Date().toISOString(),
       };
 

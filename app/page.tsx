@@ -10,8 +10,23 @@ import { VpnBookExplorer } from '@/components/VpnBookExplorer';
 import { ServerCard } from '@/components/ServerCard';
 import { ServerRow } from '@/components/ServerRow';
 import { DeleteModal } from '@/components/DeleteModal';
-import { VpnServer } from '@/lib/types';
-import { Search, Server, RefreshCw, Copy, Check, LayoutList, LayoutGrid, Sparkles, X, ShieldCheck } from 'lucide-react';
+import { VpnServer, resolveServerSource } from '@/lib/types';
+import {
+  Search,
+  Server,
+  RefreshCw,
+  Copy,
+  Check,
+  LayoutList,
+  LayoutGrid,
+  Sparkles,
+  X,
+  ShieldCheck,
+  Zap,
+  Shield,
+  UploadCloud,
+  Globe,
+} from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,6 +34,8 @@ export default function DashboardPage() {
   const [servers, setServers] = useState<VpnServer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'free' | 'vip'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'vpngate' | 'vpnbook' | 'custom'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'vpngate' | 'vpnbook' | 'custom'>('all');
   const [viewMode, setViewMode] = useState<'rows' | 'grid'>('rows'); // Default to Rows!
   const [search, setSearch] = useState('');
 
@@ -67,7 +84,6 @@ export default function DashboardPage() {
     }
   };
 
-
   const handleAutoPurgeSync = async () => {
     setIsAutoSyncing(true);
     setAutoSyncBanner(null);
@@ -91,7 +107,6 @@ export default function DashboardPage() {
       setIsAutoSyncing(false);
     }
   };
-
 
   const handleLogout = async () => {
     await fetch('/api/auth', {
@@ -158,30 +173,58 @@ export default function DashboardPage() {
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
+  // Provider server counts
+  const counts = useMemo(() => {
+    let vpngate = 0;
+    let vpnbook = 0;
+    let custom = 0;
+    for (const s of servers) {
+      const src = resolveServerSource(s);
+      if (src === 'vpngate') vpngate++;
+      else if (src === 'vpnbook') vpnbook++;
+      else custom++;
+    }
+    return { vpngate, vpnbook, custom, total: servers.length };
+  }, [servers]);
+
+  // Tab change handler (syncs view mode and fleet filter)
+  const handleTabChange = (tab: 'all' | 'vpngate' | 'vpnbook' | 'custom') => {
+    setActiveTab(tab);
+    setSourceFilter(tab);
+  };
+
   // Filtered servers
   const filteredServers = useMemo(() => {
-    return servers.filter((s) => {
-      // Type filter
-      if (filter === 'free' && s.premium) return false;
-      if (filter === 'vip' && !s.premium) return false;
+    return servers
+      .filter((s) => {
+        // Source/Provider filter
+        if (sourceFilter !== 'all') {
+          const sSource = resolveServerSource(s);
+          if (sSource !== sourceFilter) return false;
+        }
 
-      // Search filter
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        return (
-          s.country.toLowerCase().includes(q) ||
-          s.countryCode.toLowerCase().includes(q) ||
-          s.city.toLowerCase().includes(q) ||
-          (s.ip && s.ip.includes(q))
-        );
-      }
-      return true;
-    }).sort((a, b) => {
-      const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
-      const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
-      return pingA - pingB;
-    });
-  }, [servers, filter, search]);
+        // Type filter
+        if (filter === 'free' && s.premium) return false;
+        if (filter === 'vip' && !s.premium) return false;
+
+        // Search filter
+        if (search.trim()) {
+          const q = search.toLowerCase();
+          return (
+            s.country.toLowerCase().includes(q) ||
+            s.countryCode.toLowerCase().includes(q) ||
+            s.city.toLowerCase().includes(q) ||
+            (s.ip && s.ip.includes(q))
+          );
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
+        const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
+        return pingA - pingB;
+      });
+  }, [servers, sourceFilter, filter, search]);
 
   if (isLoading || isAuthenticated === null) {
     return (
@@ -223,37 +266,184 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 1-Click VPN Gate Live Discovery */}
-        <VpnGateExplorer onServerImported={loadServers} fleetServers={servers} />
+        {/* Top-Level View Switcher: All vs Only VPN Gate vs Only VPNBook vs Custom */}
+        <div className="mb-6 p-1.5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 pl-2 pr-1 hidden sm:inline">
+              Focus View:
+            </span>
 
-        {/* 1-Click VPNBook OpenVPN Fleet & Auto-Password Sync */}
-        <VpnBookExplorer onServerImported={loadServers} fleetServers={servers} />
+            {/* All Overview */}
+            <button
+              onClick={() => handleTabChange('all')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white dark:bg-slate-800 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5 text-cyan-500" />
+              <span>All Overview</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === 'all'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                {counts.total}
+              </span>
+            </button>
 
-        {/* Uploader Section */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Manual .ovpn File Upload</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Drop any custom .ovpn file from VPN Gate, VPNBook, or VPS. Existing servers for that country will be automatically replaced.
-              </p>
-            </div>
+            {/* Only VPN Gate */}
+            <button
+              onClick={() => handleTabChange('vpngate')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === 'vpngate'
+                  ? 'bg-cyan-600 text-white shadow-xs shadow-cyan-600/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-cyan-50 dark:hover:bg-cyan-950/30'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>Only VPN Gate</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === 'vpngate'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800/40'
+                }`}
+              >
+                {counts.vpngate}
+              </span>
+            </button>
+
+            {/* Only VPNBook */}
+            <button
+              onClick={() => handleTabChange('vpnbook')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === 'vpnbook'
+                  ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-blue-200" />
+              <span>Only VPNBook</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === 'vpnbook'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40'
+                }`}
+              >
+                {counts.vpnbook}
+              </span>
+            </button>
+
+            {/* Manual Upload */}
+            <button
+              onClick={() => handleTabChange('custom')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === 'custom'
+                  ? 'bg-slate-800 text-white dark:bg-slate-700 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
+            >
+              <UploadCloud className="w-3.5 h-3.5 text-slate-400" />
+              <span>Manual Upload</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === 'custom'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                {counts.custom}
+              </span>
+            </button>
           </div>
-          <OvpnUploader onServerAdded={loadServers} />
+
+          <div className="text-xs text-slate-500 dark:text-slate-400 px-3 py-1 flex items-center space-x-1.5">
+            <span className="hidden lg:inline text-slate-400 dark:text-slate-500">Active View:</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {activeTab === 'all'
+                ? 'All Providers & Tools'
+                : activeTab === 'vpngate'
+                ? '⚡ VPN Gate Live View'
+                : activeTab === 'vpnbook'
+                ? '📖 VPNBook 10-Server Fleet View'
+                : '📤 Custom .ovpn Uploader'}
+            </span>
+          </div>
         </div>
+
+        {/* 1. VPN Gate Live Discovery (Shown in 'all' or 'vpngate' view) */}
+        {(activeTab === 'all' || activeTab === 'vpngate') && (
+          <div className="mb-6">
+            <VpnGateExplorer
+              onServerImported={loadServers}
+              fleetServers={servers}
+              defaultOpen={activeTab === 'vpngate'}
+            />
+          </div>
+        )}
+
+        {/* 2. VPNBook OpenVPN Fleet & Auto-Password Sync (Shown in 'all' or 'vpnbook' view) */}
+        {(activeTab === 'all' || activeTab === 'vpnbook') && (
+          <div className="mb-6">
+            <VpnBookExplorer
+              onServerImported={loadServers}
+              fleetServers={servers}
+              defaultCollapsed={activeTab !== 'vpnbook'}
+            />
+          </div>
+        )}
+
+        {/* 3. Manual Uploader Section (Shown in 'all' or 'custom' view) */}
+        {(activeTab === 'all' || activeTab === 'custom') && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <span>Manual .ovpn File Upload</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
+                    Custom Servers
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Drop any custom .ovpn file from VPN Gate, VPNBook, or VPS. Existing servers for that country will be automatically replaced.
+                </p>
+              </div>
+            </div>
+            <OvpnUploader onServerAdded={loadServers} />
+          </div>
+        )}
 
         {/* Server List Section */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>Active Server Fleet</span>
+                <span>
+                  {sourceFilter === 'vpngate'
+                    ? '⚡ VPN Gate Server Fleet'
+                    : sourceFilter === 'vpnbook'
+                    ? '📖 VPNBook Server Fleet'
+                    : sourceFilter === 'custom'
+                    ? '📁 Custom / Manual Server Fleet'
+                    : 'Active Server Fleet'}
+                </span>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-cyan-700 dark:text-cyan-400 border border-slate-200 dark:border-slate-700 font-mono">
                   {filteredServers.length}
                 </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage live locations, delete dead servers, or toggle VIP status.
+                {sourceFilter === 'vpngate'
+                  ? 'Showing active servers imported from VPN Gate.'
+                  : sourceFilter === 'vpnbook'
+                  ? 'Showing active servers from VPNBook OpenVPN fleet.'
+                  : sourceFilter === 'custom'
+                  ? 'Showing manually uploaded custom OpenVPN servers.'
+                  : 'Manage live locations across all providers, delete dead servers, or toggle VIP status.'}
               </p>
             </div>
 
@@ -275,6 +465,93 @@ export default function DashboardPage() {
                 <span>{isAutoSyncing ? 'Purging Dead...' : 'Auto-Purge & Heal'}</span>
               </button>
 
+              {/* Provider / Source Segmented Control */}
+              <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <button
+                  onClick={() => setSourceFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    sourceFilter === 'all'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Show servers from all sources"
+                >
+                  All ({counts.total})
+                </button>
+                <button
+                  onClick={() => setSourceFilter('vpngate')}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    sourceFilter === 'vpngate'
+                      ? 'bg-cyan-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-cyan-700 dark:hover:text-cyan-300'
+                  }`}
+                  title="Show ONLY VPN Gate servers"
+                >
+                  <Zap className="w-3 h-3" />
+                  <span>VPN Gate ({counts.vpngate})</span>
+                </button>
+                <button
+                  onClick={() => setSourceFilter('vpnbook')}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    sourceFilter === 'vpnbook'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300'
+                  }`}
+                  title="Show ONLY VPNBook servers"
+                >
+                  <Shield className="w-3 h-3" />
+                  <span>VPNBook ({counts.vpnbook})</span>
+                </button>
+                {counts.custom > 0 && (
+                  <button
+                    onClick={() => setSourceFilter('custom')}
+                    className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
+                      sourceFilter === 'custom'
+                        ? 'bg-slate-700 text-white font-bold shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Show ONLY custom uploaded servers"
+                  >
+                    <UploadCloud className="w-3 h-3" />
+                    <span>Custom ({counts.custom})</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Free vs VIP Filter Tabs */}
+              <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    filter === 'all'
+                      ? 'bg-slate-800 text-white font-semibold dark:bg-slate-700'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  All Tier
+                </button>
+                <button
+                  onClick={() => setFilter('free')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    filter === 'free'
+                      ? 'bg-emerald-600 text-white font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Free
+                </button>
+                <button
+                  onClick={() => setFilter('vip')}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                    filter === 'vip'
+                      ? 'bg-amber-500 text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  VIP
+                </button>
+              </div>
+
               {/* Search Box */}
               <div className="relative">
                 <input
@@ -282,43 +559,9 @@ export default function DashboardPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search country or city..."
-                  className="pl-9 pr-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 w-36 sm:w-48 shadow-xs"
+                  className="pl-9 pr-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 w-36 sm:w-44 shadow-xs"
                 />
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-              </div>
-
-              {/* Filter Tabs */}
-              <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    filter === 'all'
-                      ? 'bg-cyan-600 text-white font-semibold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  All ({servers.length})
-                </button>
-                <button
-                  onClick={() => setFilter('free')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    filter === 'free'
-                      ? 'bg-emerald-600 text-white font-semibold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Free ({servers.filter((s) => !s.premium).length})
-                </button>
-                <button
-                  onClick={() => setFilter('vip')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                    filter === 'vip'
-                      ? 'bg-amber-500 text-white font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  VIP ({servers.filter((s) => s.premium).length})
-                </button>
               </div>
 
               {/* View Switcher (Rows vs Grid) */}
@@ -351,7 +594,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleCopyJson}
                 className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-medium transition-all"
-                title="Copy entire servers.json array to clipboard"
+                title="Copy current servers array to clipboard"
               >
                 {copiedJson ? (
                   <>
@@ -396,12 +639,35 @@ export default function DashboardPage() {
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center bg-white/50 dark:bg-slate-900/20">
               <Server className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto mb-3" />
-              <h4 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">No servers found</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">
+                {sourceFilter === 'vpngate'
+                  ? 'No VPN Gate servers found in fleet'
+                  : sourceFilter === 'vpnbook'
+                  ? 'No VPNBook servers found in fleet'
+                  : sourceFilter === 'custom'
+                  ? 'No custom uploaded servers found'
+                  : 'No servers found'}
+              </h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
                 {search
                   ? `No servers matching "${search}". Try clearing search.`
+                  : sourceFilter === 'vpngate'
+                  ? 'Scan and import live servers from VPN Gate above to populate your fleet.'
+                  : sourceFilter === 'vpnbook'
+                  ? 'Click "1-Click Import All" in the VPNBook card above to import the 10 dedicated servers.'
                   : 'Drop an .ovpn file above or scan live servers to deploy your first VPN server.'}
               </p>
+              {sourceFilter !== 'all' && (
+                <button
+                  onClick={() => {
+                    setSourceFilter('all');
+                    setActiveTab('all');
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                >
+                  <span>Reset to All Providers</span>
+                </button>
+              )}
             </div>
           )}
         </div>

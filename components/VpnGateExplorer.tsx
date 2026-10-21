@@ -8,10 +8,21 @@ import { VpnServer } from '@/lib/types';
 interface VpnGateExplorerProps {
   onServerImported: () => void;
   fleetServers?: VpnServer[];
+  defaultOpen?: boolean;
 }
 
-export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImported, fleetServers = [] }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({
+  onServerImported,
+  fleetServers = [],
+  defaultOpen = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  React.useEffect(() => {
+    if (defaultOpen) {
+      setIsOpen(true);
+    }
+  }, [defaultOpen]);
   const [loading, setLoading] = useState(false);
   const [servers, setServers] = useState<VpnGateServerItem[]>([]);
   const [importingId, setImportingId] = useState<string | null>(null);
@@ -76,6 +87,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         ip: item.ip,
         port: 443,
         ovpnBase64: item.ovpnBase64,
+        source: 'vpngate',
         updatedAt: new Date().toISOString(),
       }));
 
@@ -125,6 +137,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         ip: item.ip,
         port: 443,
         ovpnBase64: item.ovpnBase64,
+        source: 'vpngate',
         updatedAt: new Date().toISOString(),
       };
 

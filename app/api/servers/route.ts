@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServers, saveServer, deleteServer, toggleServerPremium, persistServers } from '@/lib/storage';
 import { isAuthorizedRequest } from '@/lib/auth';
-import { VpnServer } from '@/lib/types';
+import { VpnServer, resolveServerSource } from '@/lib/types';
 
 // Common CORS headers for public API consumption by Flutter app
 const corsHeaders = {
@@ -21,12 +21,17 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('type'); // 'free' | 'vip'
+    const source = searchParams.get('source'); // 'vpngate' | 'vpnbook' | 'custom'
 
     let result = servers;
     if (filter === 'free') {
       result = servers.filter((s) => !s.premium);
     } else if (filter === 'vip') {
       result = servers.filter((s) => s.premium);
+    }
+
+    if (source && source !== 'all') {
+      result = result.filter((s) => resolveServerSource(s) === source);
     }
 
     // Always sort by lowest ping first (fastest servers at the top)
