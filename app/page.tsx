@@ -10,7 +10,7 @@ import { ServerCard } from '@/components/ServerCard';
 import { ServerRow } from '@/components/ServerRow';
 import { DeleteModal } from '@/components/DeleteModal';
 import { VpnServer } from '@/lib/types';
-import { Search, Server, RefreshCw, Copy, Check, LayoutList, LayoutGrid } from 'lucide-react';
+import { Search, Server, RefreshCw, Copy, Check, LayoutList, LayoutGrid, Sparkles, X, ShieldCheck } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,6 +24,10 @@ export default function DashboardPage() {
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState<VpnServer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Auto-sync / Auto-purge state
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+  const [autoSyncBanner, setAutoSyncBanner] = useState<string | null>(null);
 
   // Copy status
   const [copiedJson, setCopiedJson] = useState(false);
@@ -59,6 +63,29 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Failed to load servers:', err);
+    }
+  };
+
+  const handleAutoPurgeSync = async () => {
+    setIsAutoSyncing(true);
+    setAutoSyncBanner(null);
+    try {
+      const res = await fetch('/api/cron/sync');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const s = data.summary;
+        setAutoSyncBanner(
+          `Auto-Purge & Health Sync Complete! Purged ${s.deadServersPurged} dead servers, added ${s.replacementsAdded} replacements. Fleet has ${s.totalFleet} active servers.`
+        );
+        await loadServers();
+      } else {
+        setAutoSyncBanner('Auto-sync completed. All active servers verified.');
+      }
+    } catch (err) {
+      console.error('Auto sync error:', err);
+      setAutoSyncBanner('Failed to execute auto-sync check.');
+    } finally {
+      setIsAutoSyncing(false);
     }
   };
 
@@ -172,6 +199,22 @@ export default function DashboardPage() {
         {/* Metric Stats */}
         <StatsBar servers={servers} />
 
+        {/* Auto Sync Result Banner */}
+        {autoSyncBanner && (
+          <div className="mb-6 p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-between backdrop-blur-md">
+            <div className="flex items-center space-x-2.5">
+              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{autoSyncBanner}</span>
+            </div>
+            <button
+              onClick={() => setAutoSyncBanner(null)}
+              className="text-cyan-400 hover:text-cyan-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* 1-Click VPN Gate Live Discovery */}
         <VpnGateExplorer onServerImported={loadServers} />
 
@@ -203,8 +246,24 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Filters & Search & View Toggle */}
+            {/* Filters, Auto-Purge & View Toggle */}
             <div className="flex flex-wrap items-center gap-2">
+              {/* Auto Purge & Sync Button */}
+              <button
+                onClick={handleAutoPurgeSync}
+                disabled={isAutoSyncing}
+                id="btn-auto-purge-sync"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/50 text-xs font-semibold transition-all shadow-sm disabled:opacity-50"
+                title="Automatically checks all servers against live VPN Gate feed and purges dead ones"
+              >
+                {isAutoSyncing ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                )}
+                <span>{isAutoSyncing ? 'Purging Dead...' : 'Auto-Purge & Heal'}</span>
+              </button>
+
               {/* Search Box */}
               <div className="relative">
                 <input
@@ -212,7 +271,7 @@ export default function DashboardPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search country or city..."
-                  className="pl-9 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-44 sm:w-56"
+                  className="pl-9 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-36 sm:w-48"
                 />
                 <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
               </div>
