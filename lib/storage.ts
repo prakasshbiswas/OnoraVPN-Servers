@@ -30,8 +30,8 @@ export async function getServers(): Promise<VpnServer[]> {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          memoryCache = data;
-          return data;
+          memoryCache = sortByPing(data);
+          return memoryCache;
         }
       }
     } catch (err) {
@@ -50,8 +50,8 @@ export async function getServers(): Promise<VpnServer[]> {
       const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        memoryCache = parsed;
-        return parsed;
+        memoryCache = sortByPing(parsed);
+        return memoryCache;
       }
     }
   } catch (err) {
@@ -61,9 +61,18 @@ export async function getServers(): Promise<VpnServer[]> {
   return [];
 }
 
+export function sortByPing(servers: VpnServer[]): VpnServer[] {
+  return [...servers].sort((a, b) => {
+    const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
+    const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
+    return pingA - pingB;
+  });
+}
+
 // Write servers to local disk, in-memory cache, and GitHub (if configured)
 export async function persistServers(servers: VpnServer[]): Promise<boolean> {
-  memoryCache = servers;
+  const sorted = sortByPing(servers);
+  memoryCache = sorted;
 
   // 1. Write to local file system
   try {
@@ -71,7 +80,7 @@ export async function persistServers(servers: VpnServer[]): Promise<boolean> {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(servers, null, 2), 'utf-8');
+    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(sorted, null, 2), 'utf-8');
   } catch (err) {
     console.warn('Could not write to local file system (likely running on read-only serverless):', err);
   }

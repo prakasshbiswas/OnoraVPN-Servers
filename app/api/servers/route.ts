@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
       result = servers.filter((s) => s.premium);
     }
 
+    // Always sort by lowest ping first (fastest servers at the top)
+    result.sort((a, b) => {
+      const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
+      const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
+      return pingA - pingB;
+    });
+
     return NextResponse.json(result, {
       status: 200,
       headers: {

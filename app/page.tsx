@@ -172,6 +172,10 @@ export default function DashboardPage() {
         );
       }
       return true;
+    }).sort((a, b) => {
+      const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
+      const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
+      return pingA - pingB;
     });
   }, [servers, filter, search]);
 
