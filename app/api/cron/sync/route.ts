@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchLiveVpnGateServers } from '@/lib/vpngate';
-import { getServers, persistServers } from '@/lib/storage';
+import { getServers, persistServers, sortByPing } from '@/lib/storage';
 import { isAuthenticated } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
 
@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
 
   // If neither Vercel Cron nor Admin session, deny
   if (!isVercelCron && !isAdminAuthed) {
-    // In dev mode without cron secret, allow if localhost
     const isLocalhost =
       req.nextUrl.hostname === 'localhost' || req.nextUrl.hostname === '127.0.0.1';
     if (!isLocalhost) {
@@ -45,14 +44,12 @@ export async function GET(req: NextRequest) {
     const activeServers: VpnServer[] = [];
     const removedServers: VpnServer[] = [];
     const updatedServers: VpnServer[] = [];
-
-    const survivingCountries = new Set<string>();
+    const activeIps = new Set<string>();
 
     for (const server of currentFleet) {
       // If server has no IP (e.g. custom domain), keep it safe
       if (!server.ip) {
         activeServers.push(server);
-        survivingCountries.add(server.countryCode.toUpperCase());
         continue;
       }
 
@@ -62,11 +59,11 @@ export async function GET(req: NextRequest) {
         const freshData = onlineIpMap.get(server.ip)!;
         const updated: VpnServer = {
           ...server,
-          ping: freshData.ping,
+          ping: freshData.ping || server.ping || 45,
           updatedAt: new Date().toISOString(),
         };
         activeServers.push(updated);
-        survivingCountries.add(server.countryCode.toUpperCase());
+        activeIps.add(server.ip);
         updatedServers.push(updated);
       } else {
         // Server is DEAD or offline! Remove it automatically!
@@ -74,55 +71,95 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 4. Auto-Heal: If any country's server died, automatically pick the fresh replacement!
+    // 4. Auto-Heal & Replenish:
+    // Candidate pool: live servers from VPN Gate not already in active fleet
+    const candidatePool = liveFreshServers.filter((s) => !activeIps.has(s.ip));
     const addedReplacements: VpnServer[] = [];
+
+    // For EVERY dead server removed, provide a fresh live replacement!
     for (const dead of removedServers) {
       const cc = dead.countryCode.toUpperCase();
-      // If this country now has no active servers, find the top fresh one
-      if (!survivingCountries.has(cc)) {
-        const replacement = liveFreshServers.find(
-          (s) => s.countryCode.toUpperCase() === cc
-        );
-        if (replacement) {
-          const newServer: VpnServer = {
-            id: dead.id, // keep same ID for app continuity
-            country: replacement.country,
-            countryCode: replacement.countryCode,
-            city: replacement.city,
-            flag: replacement.flag,
-            flagUrl: replacement.flagUrl,
-            premium: dead.premium, // retain original VIP/Free status
-            username: 'vpn',
-            password: 'vpn',
-            ping: replacement.ping,
-            proto: 'tcp',
-            ip: replacement.ip,
-            port: 443,
-            ovpnBase64: replacement.ovpnBase64,
-            updatedAt: new Date().toISOString(),
-          };
-          activeServers.push(newServer);
-          survivingCountries.add(cc);
-          addedReplacements.push(newServer);
-        }
+
+      // Strategy A: Find replacement from the SAME country with a different working IP
+      let candidateIndex = candidatePool.findIndex(
+        (s) => s.countryCode.toUpperCase() === cc
+      );
+
+      // Strategy B: If same country is not currently online, pick the top live candidate (lowest ping)
+      if (candidateIndex === -1 && candidatePool.length > 0) {
+        candidateIndex = 0;
+      }
+
+      if (candidateIndex !== -1) {
+        const replacement = candidatePool.splice(candidateIndex, 1)[0];
+        const newServer: VpnServer = {
+          id: `${replacement.countryCode.toLowerCase()}_${replacement.ip.replace(/\./g, '_')}`,
+          country: replacement.country,
+          countryCode: replacement.countryCode,
+          city: replacement.city,
+          flag: replacement.flag,
+          flagUrl: replacement.flagUrl,
+          premium: dead.premium || false, // retain VIP/Free preference
+          username: 'vpn',
+          password: 'vpn',
+          ping: replacement.ping,
+          proto: 'tcp',
+          ip: replacement.ip,
+          port: 443,
+          ovpnBase64: replacement.ovpnBase64,
+          updatedAt: new Date().toISOString(),
+        };
+        activeServers.push(newServer);
+        activeIps.add(replacement.ip);
+        addedReplacements.push(newServer);
       }
     }
 
-    // 5. Persist the updated and cleaned fleet
-    await persistServers(activeServers);
+    // 5. Fleet Size Guarantee:
+    // Ensure fleet maintains a healthy number of servers (at least 20 servers or original size)
+    const targetSize = Math.max(20, currentFleet.length);
+    while (activeServers.length < targetSize && candidatePool.length > 0) {
+      const topCandidate = candidatePool.shift()!;
+      const newServer: VpnServer = {
+        id: `${topCandidate.countryCode.toLowerCase()}_${topCandidate.ip.replace(/\./g, '_')}`,
+        country: topCandidate.country,
+        countryCode: topCandidate.countryCode,
+        city: topCandidate.city,
+        flag: topCandidate.flag,
+        flagUrl: topCandidate.flagUrl,
+        premium: false,
+        username: 'vpn',
+        password: 'vpn',
+        ping: topCandidate.ping,
+        proto: 'tcp',
+        ip: topCandidate.ip,
+        port: 443,
+        ovpnBase64: topCandidate.ovpnBase64,
+        updatedAt: new Date().toISOString(),
+      };
+      activeServers.push(newServer);
+      activeIps.add(topCandidate.ip);
+      addedReplacements.push(newServer);
+    }
+
+    // Sort final fleet by lowest ping first
+    const finalSortedFleet = sortByPing(activeServers);
+
+    // 6. Persist the updated and cleaned fleet
+    await persistServers(finalSortedFleet);
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       summary: {
-        totalFleet: activeServers.length,
+        totalFleet: finalSortedFleet.length,
         deadServersPurged: removedServers.length,
         replacementsAdded: addedReplacements.length,
         serversUpdated: updatedServers.length,
       },
       purged: removedServers.map((s) => ({ id: s.id, country: s.country, ip: s.ip })),
       replacements: addedReplacements.map((s) => ({ id: s.id, country: s.country, ip: s.ip })),
-      activeFleet: activeServers,
+      activeFleet: finalSortedFleet,
     });
   } catch (error: any) {
     console.error('Auto-sync error:', error);
