@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Trash2, Lock, Unlock, Copy, Check, Activity, Globe, Wifi } from 'lucide-react';
 import { VpnServer } from '@/lib/types';
+import { getFlagUrl } from '@/lib/geoip';
 
 interface ServerCardProps {
   server: VpnServer;
@@ -16,6 +17,7 @@ export const ServerCard: React.FC<ServerCardProps> = ({
   onTogglePremium,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handleCopyBase64 = () => {
     if (server.ovpnBase64) {
@@ -25,13 +27,27 @@ export const ServerCard: React.FC<ServerCardProps> = ({
     }
   };
 
+  const flagSrc = server.flagUrl || getFlagUrl(server.countryCode);
+
   return (
     <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-5 backdrop-blur-md hover:border-slate-700/80 transition-all flex flex-col justify-between group">
       <div>
-        {/* Top Header */}
+        {/* Top Header with Flag Image */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-3">
-            <span className="text-3xl select-none">{server.flag}</span>
+            <div className="w-11 h-7.5 rounded-md overflow-hidden bg-slate-800 border border-slate-700/80 shrink-0 shadow-sm flex items-center justify-center">
+              {!imgError ? (
+                <img
+                  src={flagSrc}
+                  alt={server.country}
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-xs font-bold text-slate-400">{server.countryCode}</span>
+              )}
+            </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h4 className="font-bold text-white text-base">{server.country}</h4>

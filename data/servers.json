@@ -172,10 +172,11 @@
     "city": "London (10 Gbps Ultra)",
     "flag": "🇬🇧",
     "flagUrl": "https://flagcdn.com/w80/gb.png",
-    "premium": true,
+    "premium": false,
     "username": "vip_user",
     "password": "vip_password",
     "ping": 28,
-    "ovpnConfig": "dev tun\nproto udp\nremote uk.oneiootech.com 1194\nresolv-retry infinite\nnobind\npersist-key\npersist-tun\nclient\nverb 3\n"
+    "ovpnConfig": "dev tun\nproto udp\nremote uk.oneiootech.com 1194\nresolv-retry infinite\nnobind\npersist-key\npersist-tun\nclient\nverb 3\n",
+    "updatedAt": "2026-10-21T08:37:31.848Z"
   }
 ]

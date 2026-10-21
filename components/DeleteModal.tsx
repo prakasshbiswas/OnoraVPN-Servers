@@ -40,7 +40,13 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({
 
         <div className="mb-6">
           <div className="flex items-center space-x-3 p-3 rounded-xl bg-slate-950 border border-slate-800 mb-3">
-            <span className="text-3xl">{server.flag}</span>
+            <div className="w-10 h-7 rounded overflow-hidden bg-slate-800 border border-slate-700 shrink-0">
+              <img
+                src={server.flagUrl || `https://flagcdn.com/w80/${server.countryCode.toLowerCase()}.png`}
+                alt={server.country}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div>
               <h4 className="font-semibold text-white text-sm">{server.country}</h4>
               <p className="text-xs text-slate-400">{server.city} (ID: {server.id})</p>

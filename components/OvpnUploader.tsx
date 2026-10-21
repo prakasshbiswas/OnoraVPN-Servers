@@ -228,8 +228,14 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
         /* Parsed Preview Card */
         <div className="rounded-2xl bg-slate-900/90 border border-cyan-500/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-cyan-950/50">
           <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
-            <div className="flex items-center space-x-3">
-              <span className="text-4xl">{preview.flag}</span>
+            <div className="flex items-center space-x-3.5">
+              <div className="w-12 h-8 rounded-md overflow-hidden bg-slate-800 border border-slate-700 shadow-sm shrink-0">
+                <img
+                  src={preview.flagUrl || `https://flagcdn.com/w80/${preview.countryCode.toLowerCase()}.png`}
+                  alt={preview.country}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div>
                 <h3 className="text-xl font-bold text-white flex items-center space-x-2">
                   <span>{preview.country}</span>

@@ -7,9 +7,10 @@ import { StatsBar } from '@/components/StatsBar';
 import { OvpnUploader } from '@/components/OvpnUploader';
 import { VpnGateExplorer } from '@/components/VpnGateExplorer';
 import { ServerCard } from '@/components/ServerCard';
+import { ServerRow } from '@/components/ServerRow';
 import { DeleteModal } from '@/components/DeleteModal';
 import { VpnServer } from '@/lib/types';
-import { Search, Server, RefreshCw, Copy, Check } from 'lucide-react';
+import { Search, Server, RefreshCw, Copy, Check, LayoutList, LayoutGrid } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const [servers, setServers] = useState<VpnServer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'free' | 'vip'>('all');
+  const [viewMode, setViewMode] = useState<'rows' | 'grid'>('rows'); // Default to Rows!
   const [search, setSearch] = useState('');
 
   // Delete modal state
@@ -201,7 +203,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Filters & Search */}
+            {/* Filters & Search & View Toggle */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Search Box */}
               <div className="relative">
@@ -249,6 +251,32 @@ export default function DashboardPage() {
                 </button>
               </div>
 
+              {/* View Switcher (Rows vs Grid) */}
+              <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                <button
+                  onClick={() => setViewMode('rows')}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    viewMode === 'rows'
+                      ? 'bg-cyan-500 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Rows View (List)"
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    viewMode === 'grid'
+                      ? 'bg-cyan-500 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Grid View (Cards)"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+
               {/* Copy Full JSON button */}
               <button
                 onClick={handleCopyJson}
@@ -270,18 +298,31 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Cards Grid */}
+          {/* List Display: Rows vs Grid */}
           {filteredServers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredServers.map((server) => (
-                <ServerCard
-                  key={server.id}
-                  server={server}
-                  onDeleteRequest={(srv) => setDeleteTarget(srv)}
-                  onTogglePremium={handleTogglePremium}
-                />
-              ))}
-            </div>
+            viewMode === 'rows' ? (
+              <div className="flex flex-col space-y-2.5">
+                {filteredServers.map((server) => (
+                  <ServerRow
+                    key={server.id}
+                    server={server}
+                    onDeleteRequest={(srv) => setDeleteTarget(srv)}
+                    onTogglePremium={handleTogglePremium}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredServers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    onDeleteRequest={(srv) => setDeleteTarget(srv)}
+                    onTogglePremium={handleTogglePremium}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-800 p-12 text-center bg-slate-900/20">
               <Server className="w-10 h-10 text-slate-600 mx-auto mb-3" />

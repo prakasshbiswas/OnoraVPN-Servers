@@ -160,8 +160,15 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl">{srv.flag}</span>
+                        <div className="flex items-center space-x-2.5">
+                          <div className="w-7 h-5 rounded overflow-hidden bg-slate-800 border border-slate-700/80 shrink-0">
+                            <img
+                              src={srv.flagUrl || `https://flagcdn.com/w80/${srv.countryCode.toLowerCase()}.png`}
+                              alt={srv.country}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
                           <div>
                             <span className="font-bold text-white">{srv.country}</span>
                             <span className="ml-1 text-[10px] text-slate-400 font-mono">({srv.countryCode})</span>
