@@ -13,13 +13,22 @@ export async function GET() {
     const liveServers = await fetchLiveVpnGateServers();
     const currentFleet = await getServers();
 
-    const activeCountryCodes = new Set(currentFleet.map((s) => s.countryCode.toUpperCase()));
+    const activeIps = new Set(currentFleet.map((s) => s.ip).filter(Boolean));
 
-    const annotated = liveServers.map((s) => ({
-      ...s,
-      alreadyInFleet: activeCountryCodes.has(s.countryCode.toUpperCase()),
-      existingServerId: currentFleet.find((f) => f.countryCode.toUpperCase() === s.countryCode.toUpperCase())?.id,
-    }));
+    const annotated = liveServers.map((s) => {
+      const exactIpInFleet = activeIps.has(s.ip);
+      const sameCountryServer = currentFleet.find(
+        (f) => f.countryCode.toUpperCase() === s.countryCode.toUpperCase()
+      );
+
+      return {
+        ...s,
+        exactIpInFleet,
+        countryInFleet: !!sameCountryServer,
+        existingServerId: sameCountryServer?.id,
+        existingServerIp: sameCountryServer?.ip,
+      };
+    });
 
     return NextResponse.json(annotated, {
       headers: {

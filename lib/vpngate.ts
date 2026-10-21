@@ -1,5 +1,4 @@
 import { getFlagEmoji, getFlagUrl } from './geoip';
-import { VpnServer } from './types';
 
 export interface VpnGateServerItem {
   id: string;
@@ -14,7 +13,10 @@ export interface VpnGateServerItem {
   flag: string;
   flagUrl: string;
   ovpnBase64: string;
-  alreadyInFleet?: boolean;
+  exactIpInFleet?: boolean;
+  countryInFleet?: boolean;
+  existingServerId?: string;
+  existingServerIp?: string;
 }
 
 export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
@@ -52,6 +54,7 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
 
     const rawRows = lines.slice(headerIndex + 1);
     const parsedServers: VpnGateServerItem[] = [];
+    const seenIps = new Set<string>();
 
     for (const line of rawRows) {
       if (!line.trim() || line.startsWith('*')) continue;
@@ -69,6 +72,8 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
       const ovpnBase64 = cols[14]?.trim();
 
       if (!ip || !countryShort || !ovpnBase64 || ovpnBase64.length < 50) continue;
+      if (seenIps.has(ip)) continue;
+      seenIps.add(ip);
 
       parsedServers.push({
         id: `${countryShort.toLowerCase()}_${ip.replace(/\./g, '_')}`,
@@ -79,7 +84,7 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
         score,
         country: countryLong,
         countryCode: countryShort,
-        city: `${countryLong} (VPN Gate)`,
+        city: `${countryLong} (${ip})`,
         flag: getFlagEmoji(countryShort),
         flagUrl: getFlagUrl(countryShort),
         ovpnBase64,
@@ -89,15 +94,22 @@ export async function fetchLiveVpnGateServers(): Promise<VpnGateServerItem[]> {
     // Sort by best score / lowest ping
     parsedServers.sort((a, b) => b.score - a.score || a.ping - b.ping);
 
-    // Pick top unique best servers per country
-    const bestPerCountry = new Map<string, VpnGateServerItem>();
+    // Keep up to 3 best unique IP servers per country
+    const countryCounts = new Map<string, number>();
+    const result: VpnGateServerItem[] = [];
+
     for (const srv of parsedServers) {
-      if (!bestPerCountry.has(srv.countryCode)) {
-        bestPerCountry.set(srv.countryCode, srv);
+      const count = countryCounts.get(srv.countryCode) || 0;
+      if (count < 3) {
+        countryCounts.set(srv.countryCode, count + 1);
+        result.push({
+          ...srv,
+          city: `${srv.country} #${count + 1} (${srv.ip})`,
+        });
       }
     }
 
-    return Array.from(bestPerCountry.values());
+    return result;
   } catch (err) {
     console.error('Failed to fetch from VPN Gate API:', err);
     return [];

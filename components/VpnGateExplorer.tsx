@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { RefreshCw, Zap, Check, Wifi, Globe, Shield, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Zap, Check, Wifi, Globe, Plus, RotateCw } from 'lucide-react';
 import { VpnGateServerItem } from '@/lib/vpngate';
 import { VpnServer } from '@/lib/types';
 
@@ -12,7 +12,7 @@ interface VpnGateExplorerProps {
 export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImported }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [servers, setServers] = useState<any[]>([]);
+  const [servers, setServers] = useState<VpnGateServerItem[]>([]);
   const [importingId, setImportingId] = useState<string | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
 
@@ -32,14 +32,20 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
     }
   };
 
-  const handleImport = async (item: VpnGateServerItem, isVip: boolean = false) => {
+  const handleImport = async (
+    item: VpnGateServerItem,
+    isVip: boolean = false,
+    replaceCountry: boolean = false
+  ) => {
     setImportingId(item.id);
     try {
+      const serverId = replaceCountry && item.existingServerId ? item.existingServerId : item.id;
+
       const newServer: VpnServer = {
-        id: item.alreadyInFleet && (item as any).existingServerId ? (item as any).existingServerId : item.id,
+        id: serverId,
         country: item.country,
         countryCode: item.countryCode,
-        city: `${item.country} (Live Gateway)`,
+        city: item.city,
         flag: item.flag,
         flagUrl: item.flagUrl,
         premium: isVip,
@@ -58,7 +64,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           server: newServer,
-          replaceCountry: true, // Auto-replace old server!
+          replaceCountry,
         }),
       });
 
@@ -69,7 +75,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
 
         // Update local status in explorer
         setServers((prev) =>
-          prev.map((s) => (s.id === item.id ? { ...s, alreadyInFleet: true } : s))
+          prev.map((s) => (s.id === item.id ? { ...s, exactIpInFleet: true } : s))
         );
       }
     } catch (err) {
@@ -91,11 +97,11 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               <h3 className="font-bold text-white text-sm flex items-center space-x-2">
                 <span>VPN Gate Live API Discovery</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30">
-                  Direct CSV Feed
+                  Multiple IPs Supported
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                Instantly scan real-time active servers from <code className="text-cyan-300">vpngate.net/api/iphone/</code> and replace dead ones in 1-click without downloading files.
+                Discover live servers from <code className="text-cyan-300">vpngate.net/api/iphone/</code>. You can replace dead servers OR add new IPs alongside existing ones.
               </p>
             </div>
           </div>
@@ -119,7 +125,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               </div>
               <div>
                 <h3 className="font-bold text-white text-sm">Live Servers from VPN Gate Official API</h3>
-                <p className="text-xs text-slate-400">Curated top speed and lowest ping servers per country</p>
+                <p className="text-xs text-slate-400">Multiple unique IP gateways available per country</p>
               </div>
             </div>
 
@@ -148,7 +154,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               <span className="text-xs text-slate-400">Querying live CSV feed from vpngate.net...</span>
             </div>
           ) : servers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[460px] overflow-y-auto pr-1">
               {servers.map((srv) => {
                 const isImporting = importingId === srv.id;
                 const isSuccess = successId === srv.id;
@@ -159,6 +165,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                     className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-all text-xs"
                   >
                     <div>
+                      {/* Flag and Country Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2.5">
                           <div className="w-7 h-5 rounded overflow-hidden bg-slate-800 border border-slate-700/80 shrink-0">
@@ -175,9 +182,14 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                           </div>
                         </div>
 
-                        {srv.alreadyInFleet ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold">
-                            In Fleet
+                        {/* Status Badge */}
+                        {srv.exactIpInFleet ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                            ✓ In Fleet
+                          </span>
+                        ) : srv.countryInFleet ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-cyan-300 border border-cyan-500/20 font-semibold">
+                            New IP
                           </span>
                         ) : (
                           <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">
@@ -186,6 +198,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                         )}
                       </div>
 
+                      {/* Ping and IP info */}
                       <div className="flex items-center space-x-3 text-slate-400 mb-3">
                         <div className="flex items-center space-x-1">
                           <Wifi className="w-3 h-3 text-emerald-400" />
@@ -193,43 +206,93 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                         </div>
                         <div className="flex items-center space-x-1">
                           <Globe className="w-3 h-3 text-cyan-400" />
-                          <span className="truncate max-w-[120px]">{srv.ip}</span>
+                          <span className="truncate max-w-[140px] font-mono text-[11px] text-slate-300">
+                            {srv.ip}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 pt-2 border-t border-slate-800/60">
-                      <button
-                        onClick={() => handleImport(srv, false)}
-                        disabled={isImporting}
-                        className={`flex-1 py-1.5 rounded-lg font-bold text-[11px] transition-all flex items-center justify-center space-x-1 ${
-                          srv.alreadyInFleet
-                            ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30'
-                            : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
-                        }`}
-                      >
-                        {isSuccess ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span>Updated!</span>
-                          </>
-                        ) : isImporting ? (
-                          <RefreshCw className="w-3 h-3 animate-spin" />
-                        ) : srv.alreadyInFleet ? (
-                          <span>Replace {srv.countryCode}</span>
-                        ) : (
-                          <span>+ Add Free</span>
-                        )}
-                      </button>
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/60">
+                      {srv.exactIpInFleet ? (
+                        <div className="w-full py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-emerald-400 text-center text-[11px] font-semibold flex items-center justify-center space-x-1">
+                          <Check className="w-3 h-3" />
+                          <span>Already in Fleet</span>
+                        </div>
+                      ) : srv.countryInFleet ? (
+                        /* Country already exists with different IP: Give option to REPLACE or ADD AS 2ND */
+                        <>
+                          <button
+                            onClick={() => handleImport(srv, false, false)}
+                            disabled={isImporting}
+                            className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1 shadow-sm"
+                            title="Add this IP as an additional server for this country"
+                          >
+                            {isSuccess ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-950" />
+                                <span>Added!</span>
+                              </>
+                            ) : isImporting ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Plus className="w-3 h-3" />
+                                <span>Add New IP</span>
+                              </>
+                            )}
+                          </button>
 
-                      <button
-                        onClick={() => handleImport(srv, true)}
-                        disabled={isImporting}
-                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 font-bold text-[11px] transition-all"
-                        title="Add/Replace as VIP Server"
-                      >
-                        + VIP
-                      </button>
+                          <button
+                            onClick={() => handleImport(srv, false, true)}
+                            disabled={isImporting}
+                            className="py-1.5 px-2.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-bold text-[11px] transition-all flex items-center space-x-1"
+                            title="Replace the old server for this country with this IP"
+                          >
+                            <RotateCw className="w-3 h-3" />
+                            <span>Replace</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleImport(srv, true, false)}
+                            disabled={isImporting}
+                            className="px-2 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 font-bold text-[11px] transition-all"
+                            title="Add as VIP server"
+                          >
+                            + VIP
+                          </button>
+                        </>
+                      ) : (
+                        /* New country entirely */
+                        <>
+                          <button
+                            onClick={() => handleImport(srv, false, false)}
+                            disabled={isImporting}
+                            className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[11px] transition-all flex items-center justify-center space-x-1"
+                          >
+                            {isSuccess ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-950" />
+                                <span>Added!</span>
+                              </>
+                            ) : isImporting ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <span>+ Add Free</span>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => handleImport(srv, true, false)}
+                            disabled={isImporting}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 font-bold text-[11px] transition-all"
+                            title="Add as VIP Server"
+                          >
+                            + VIP
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
