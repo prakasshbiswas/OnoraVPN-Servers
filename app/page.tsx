@@ -70,7 +70,7 @@ export default function DashboardPage() {
     setIsAutoSyncing(true);
     setAutoSyncBanner(null);
     try {
-      const res = await fetch('/api/cron/sync');
+      const res = await fetch('/api/cron/sync?key=admin123');
       const data = await res.json();
       if (res.ok && data.success) {
         const s = data.summary;
@@ -79,15 +79,17 @@ export default function DashboardPage() {
         );
         await loadServers();
       } else {
-        setAutoSyncBanner('Auto-sync completed. All active servers verified.');
+        setAutoSyncBanner(data.message || data.error || 'Auto-sync completed.');
+        await loadServers();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Auto sync error:', err);
       setAutoSyncBanner('Failed to execute auto-sync check.');
     } finally {
       setIsAutoSyncing(false);
     }
   };
+
 
   const handleLogout = async () => {
     await fetch('/api/auth', {
@@ -220,7 +222,7 @@ export default function DashboardPage() {
         )}
 
         {/* 1-Click VPN Gate Live Discovery */}
-        <VpnGateExplorer onServerImported={loadServers} />
+        <VpnGateExplorer onServerImported={loadServers} fleetServers={servers} />
 
         {/* Uploader Section */}
         <div className="mb-10">

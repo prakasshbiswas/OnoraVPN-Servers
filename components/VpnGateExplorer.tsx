@@ -1,43 +1,64 @@
 'use client';
 
-import React, { useState } from 'react';
-import { RefreshCw, Zap, Check, Wifi, Globe, Plus, RotateCw } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { RefreshCw, Zap, Check, Wifi, Globe, Plus, RotateCw, AlertCircle, X } from 'lucide-react';
 import { VpnGateServerItem } from '@/lib/vpngate';
 import { VpnServer } from '@/lib/types';
 
 interface VpnGateExplorerProps {
   onServerImported: () => void;
+  fleetServers?: VpnServer[];
 }
 
-export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImported }) => {
+export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImported, fleetServers = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [servers, setServers] = useState<VpnGateServerItem[]>([]);
   const [importingId, setImportingId] = useState<string | null>(null);
   const [importingAll, setImportingAll] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Real-time reactive fleet lookup from parent
+  const activeIpSet = useMemo(() => {
+    return new Set((fleetServers || []).map((s) => s.ip).filter(Boolean));
+  }, [fleetServers]);
+
+  const activeCountrySet = useMemo(() => {
+    return new Set((fleetServers || []).map((s) => s.countryCode.toUpperCase()));
+  }, [fleetServers]);
+
+  const unaddedCount = useMemo(() => {
+    return servers.filter((s) => !activeIpSet.has(s.ip) && !s.exactIpInFleet).length;
+  }, [servers, activeIpSet]);
 
   const handleFetch = async () => {
     setLoading(true);
     setIsOpen(true);
+    setErrorMessage(null);
     try {
-      const res = await fetch('/api/vpngate');
+      const res = await fetch(`/api/vpngate?t=${Date.now()}&key=admin123`);
       if (res.ok) {
         const data = await res.json();
         setServers(Array.isArray(data) ? data : []);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.error || 'Failed to fetch VPN Gate servers');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch VPN Gate:', err);
+      setErrorMessage(err.message || 'Network error fetching live feed');
     } finally {
       setLoading(false);
     }
   };
 
   const handleImportAll = async () => {
-    const unadded = servers.filter((s) => !s.exactIpInFleet);
+    const unadded = servers.filter((s) => !activeIpSet.has(s.ip) && !s.exactIpInFleet);
     if (unadded.length === 0) return;
 
     setImportingAll(true);
+    setErrorMessage(null);
     try {
       const payload = unadded.map((item) => ({
         id: item.id,
@@ -57,7 +78,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         updatedAt: new Date().toISOString(),
       }));
 
-      const res = await fetch('/api/servers', {
+      const res = await fetch('/api/servers?key=admin123', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ servers: payload }),
@@ -66,9 +87,13 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
       if (res.ok) {
         onServerImported();
         setServers((prev) => prev.map((s) => ({ ...s, exactIpInFleet: true })));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.error || 'Failed to auto-add servers to fleet');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Batch import error:', err);
+      setErrorMessage(err.message || 'Error communicating with server');
     } finally {
       setImportingAll(false);
     }
@@ -80,6 +105,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
     replaceCountry: boolean = false
   ) => {
     setImportingId(item.id);
+    setErrorMessage(null);
     try {
       const serverId = replaceCountry && item.existingServerId ? item.existingServerId : item.id;
 
@@ -101,7 +127,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         updatedAt: new Date().toISOString(),
       };
 
-      const res = await fetch('/api/servers', {
+      const res = await fetch('/api/servers?key=admin123', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,9 +145,13 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
         setServers((prev) =>
           prev.map((s) => (s.id === item.id ? { ...s, exactIpInFleet: true } : s))
         );
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setErrorMessage(err.error || 'Failed to save server');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Import error:', err);
+      setErrorMessage(err.message || 'Network error saving server');
     } finally {
       setImportingId(null);
     }
@@ -172,7 +202,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
             </div>
 
             <div className="flex items-center space-x-2">
-              {servers.filter((s) => !s.exactIpInFleet).length > 0 && (
+              {unaddedCount > 0 && (
                 <button
                   onClick={handleImportAll}
                   disabled={importingAll}
@@ -185,7 +215,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                   ) : (
                     <Zap className="w-3.5 h-3.5" />
                   )}
-                  <span>Auto-Add All ({servers.filter((s) => !s.exactIpInFleet).length})</span>
+                  <span>Auto-Add All ({unaddedCount})</span>
                 </button>
               )}
 
@@ -207,6 +237,19 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
             </div>
           </div>
 
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button onClick={() => setErrorMessage(null)} className="text-rose-500 hover:text-rose-700">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="py-12 text-center flex flex-col items-center justify-center space-y-2">
               <RefreshCw className="w-7 h-7 text-cyan-600 dark:text-cyan-400 animate-spin" />
@@ -217,6 +260,8 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
               {servers.map((srv) => {
                 const isImporting = importingId === srv.id;
                 const isSuccess = successId === srv.id;
+                const isIpInFleet = activeIpSet.has(srv.ip) || !!srv.exactIpInFleet;
+                const isCountryInFleet = activeCountrySet.has(srv.countryCode.toUpperCase()) || !!srv.countryInFleet;
 
                 return (
                   <div
@@ -242,11 +287,11 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
                         </div>
 
                         {/* Status Badge */}
-                        {srv.exactIpInFleet ? (
+                        {isIpInFleet ? (
                           <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 font-semibold">
                             ✓ In Fleet
                           </span>
-                        ) : srv.countryInFleet ? (
+                        ) : isCountryInFleet ? (
                           <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/20 font-semibold">
                             New IP
                           </span>
@@ -274,12 +319,12 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/60">
-                      {srv.exactIpInFleet ? (
+                      {isIpInFleet ? (
                         <div className="w-full py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 text-center text-[11px] font-semibold flex items-center justify-center space-x-1">
                           <Check className="w-3 h-3" />
                           <span>Already in Fleet</span>
                         </div>
-                      ) : srv.countryInFleet ? (
+                      ) : isCountryInFleet ? (
                         /* Country already exists with different IP: Give option to REPLACE or ADD AS 2ND */
                         <>
                           <button
@@ -359,7 +404,7 @@ export const VpnGateExplorer: React.FC<VpnGateExplorerProps> = ({ onServerImport
             </div>
           ) : (
             <p className="text-center text-xs text-slate-500 py-6">
-              No live servers retrieved from VPN Gate.
+              No live servers retrieved from VPN Gate. Click Refresh or Scan.
             </p>
           )}
         </div>

@@ -63,7 +63,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('/api/parse-ovpn', {
+      const res = await fetch('/api/parse-ovpn?key=admin123', {
         method: 'POST',
         body: formData,
       });
@@ -117,7 +117,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
         updatedAt: new Date().toISOString(),
       };
 
-      const res = await fetch('/api/servers', {
+      const res = await fetch('/api/servers?key=admin123', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,6 +125,7 @@ export const OvpnUploader: React.FC<OvpnUploaderProps> = ({ onServerAdded }) => 
           replaceCountry: replaceExisting,
         }),
       });
+
 
       if (!res.ok) {
         const err = await res.json();

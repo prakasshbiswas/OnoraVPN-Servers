@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseOvpnContent } from '@/lib/ovpn-parser';
 import { getServers } from '@/lib/storage';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthorizedRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
-  const authed = await isAuthenticated();
+  const authed = await isAuthorizedRequest(req);
   if (!authed) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
 
   try {
     let content = '';

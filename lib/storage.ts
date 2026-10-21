@@ -3,6 +3,7 @@ import path from 'path';
 import { VpnServer } from './types';
 
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'servers.json');
+const TMP_FILE_PATH = path.join('/tmp', 'servers.json');
 
 // In-memory cache for serverless environments when disk write is unavailable
 let memoryCache: VpnServer[] | null = null;
@@ -44,7 +45,21 @@ export async function getServers(): Promise<VpnServer[]> {
     return memoryCache;
   }
 
-  // 3. Read from local disk file
+  // 3. Try reading from /tmp/servers.json (Writable on AWS Lambda / Vercel Serverless)
+  try {
+    if (fs.existsSync(TMP_FILE_PATH)) {
+      const raw = fs.readFileSync(TMP_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        memoryCache = sortByPing(parsed);
+        return memoryCache;
+      }
+    }
+  } catch (err) {
+    // /tmp might not be accessible on Windows local dev, which is normal
+  }
+
+  // 4. Read from local disk file
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const raw = fs.readFileSync(DATA_FILE_PATH, 'utf-8');
@@ -74,7 +89,14 @@ export async function persistServers(servers: VpnServer[]): Promise<boolean> {
   const sorted = sortByPing(servers);
   memoryCache = sorted;
 
-  // 1. Write to local file system
+  // 1. Write to /tmp/servers.json (Always writable on Linux serverless / AWS Lambda)
+  try {
+    fs.writeFileSync(TMP_FILE_PATH, JSON.stringify(sorted, null, 2), 'utf-8');
+  } catch {
+    // Windows dev or read-only tmp
+  }
+
+  // 2. Write to project data/servers.json if writable
   try {
     const dir = path.dirname(DATA_FILE_PATH);
     if (!fs.existsSync(dir)) {
@@ -84,6 +106,7 @@ export async function persistServers(servers: VpnServer[]): Promise<boolean> {
   } catch (err) {
     console.warn('Could not write to local file system (likely running on read-only serverless):', err);
   }
+
 
   // 2. Commit to GitHub repository if configured
   const githubToken = process.env.GITHUB_TOKEN;

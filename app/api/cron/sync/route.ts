@@ -1,40 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchLiveVpnGateServers } from '@/lib/vpngate';
 import { getServers, persistServers, sortByPing } from '@/lib/storage';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthorizedRequest } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
 
 // Supports Vercel Cron, external crons (UptimeRobot, cron-job.org), and Admin session
 export async function GET(req: NextRequest) {
   // 1. Verify Authorization
-  const authHeader = req.headers.get('authorization');
-  const keyParam = req.nextUrl.searchParams.get('key');
-  const adminPass = (process.env.ADMIN_PASSWORD || 'admin123').trim().replace(/^["']|["']$/g, '');
-  const cronSecret = (process.env.CRON_SECRET || '').trim().replace(/^["']|["']$/g, '');
-
-  const isSecretMatched =
-    keyParam === 'admin123' ||
-    keyParam === 'sync' ||
-    keyParam === 'vpn-cron-sync-secret' ||
-    (adminPass && keyParam === adminPass) ||
-    (cronSecret && keyParam === cronSecret) ||
-    (authHeader && (
-      authHeader === `Bearer ${adminPass}` ||
-      authHeader === `Bearer ${cronSecret}` ||
-      authHeader === `Bearer admin123` ||
-      authHeader === adminPass
-    ));
-
-  const isAdminAuthed = await isAuthenticated();
-
-  // If neither secret key nor Admin session, deny
-  if (!isSecretMatched && !isAdminAuthed) {
-    const isLocalhost =
-      req.nextUrl.hostname === 'localhost' || req.nextUrl.hostname === '127.0.0.1';
-    if (!isLocalhost) {
-      return NextResponse.json({ error: 'Unauthorized. Provide valid key or admin session.' }, { status: 401 });
-    }
+  const authed = await isAuthorizedRequest(req);
+  if (!authed) {
+    return NextResponse.json({ error: 'Unauthorized. Provide valid key or admin session.' }, { status: 401 });
   }
+
 
   try {
     // 2. Fetch fresh live servers from VPN Gate

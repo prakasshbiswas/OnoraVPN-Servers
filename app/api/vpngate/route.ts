@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { fetchLiveVpnGateServers } from '@/lib/vpngate';
 import { getServers } from '@/lib/storage';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthorizedRequest } from '@/lib/auth';
 
-export async function GET() {
-  const authed = await isAuthenticated();
+export async function GET(req: NextRequest) {
+  const authed = await isAuthorizedRequest(req);
   if (!authed) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -32,7 +32,7 @@ export async function GET() {
 
     return NextResponse.json(annotated, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
       },
     });
   } catch (error) {
@@ -40,3 +40,4 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch VPN Gate servers' }, { status: 500 });
   }
 }
+

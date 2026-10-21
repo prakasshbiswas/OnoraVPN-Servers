@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServers, saveServer, deleteServer, toggleServerPremium, persistServers } from '@/lib/storage';
-import { isAuthenticated } from '@/lib/auth';
+import { isAuthorizedRequest } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
 
 // Common CORS headers for public API consumption by Flutter app
@@ -54,10 +54,11 @@ export async function GET(req: NextRequest) {
 
 // POST /api/servers - Save or Replace a server (Admin Only)
 export async function POST(req: NextRequest) {
-  const authed = await isAuthenticated();
+  const authed = await isAuthorizedRequest(req);
   if (!authed) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
   }
+
 
   try {
     const body = await req.json();
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/servers?id=... - Delete server (Admin Only)
 export async function DELETE(req: NextRequest) {
-  const authed = await isAuthenticated();
+  const authed = await isAuthorizedRequest(req);
   if (!authed) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
   }
@@ -153,7 +154,7 @@ export async function DELETE(req: NextRequest) {
 
 // PATCH /api/servers - Toggle VIP status (Admin Only)
 export async function PATCH(req: NextRequest) {
-  const authed = await isAuthenticated();
+  const authed = await isAuthorizedRequest(req);
   if (!authed) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
   }
