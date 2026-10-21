@@ -5,8 +5,12 @@ import { VpnServer } from './types';
 const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'servers.json');
 const TMP_FILE_PATH = path.join('/tmp', 'servers.json');
 
-// In-memory cache for serverless environments when disk write is unavailable
+const VPNBOOK_DATA_FILE_PATH = path.join(process.cwd(), 'data', 'vpnbook.json');
+const VPNBOOK_TMP_FILE_PATH = path.join('/tmp', 'vpnbook.json');
+
+// In-memory caches for serverless environments
 let memoryCache: VpnServer[] | null = null;
+let vpnBookMemoryCache: VpnServer[] | null = null;
 
 // Read servers from file, GitHub, or fallback
 export async function getServers(): Promise<VpnServer[]> {
@@ -76,12 +80,133 @@ export async function getServers(): Promise<VpnServer[]> {
   return [];
 }
 
+// Read dedicated VPNBook servers from file, GitHub, or fallback
+export async function getVpnBookServers(): Promise<VpnServer[]> {
+  const githubToken = process.env.GITHUB_TOKEN;
+  const githubRepo = process.env.GITHUB_REPO || 'prakasshbiswas/OnoraVPN-Servers';
+  const githubBranch = process.env.GITHUB_BRANCH || 'main';
+  const githubFilePath = 'data/vpnbook.json';
+
+  if (githubToken && githubRepo) {
+    try {
+      const res = await fetch(
+        `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/${githubFilePath}?t=${Date.now()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            Accept: 'application/vnd.github.v3.raw',
+          },
+          cache: 'no-store',
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          vpnBookMemoryCache = sortByPing(data);
+          return vpnBookMemoryCache;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not read vpnbook from GitHub, falling back to local file/cache:', err);
+    }
+  }
+
+  if (vpnBookMemoryCache && vpnBookMemoryCache.length > 0) {
+    return vpnBookMemoryCache;
+  }
+
+  try {
+    if (fs.existsSync(VPNBOOK_TMP_FILE_PATH)) {
+      const raw = fs.readFileSync(VPNBOOK_TMP_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        vpnBookMemoryCache = sortByPing(parsed);
+        return vpnBookMemoryCache;
+      }
+    }
+  } catch {}
+
+  try {
+    if (fs.existsSync(VPNBOOK_DATA_FILE_PATH)) {
+      const raw = fs.readFileSync(VPNBOOK_DATA_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        vpnBookMemoryCache = sortByPing(parsed);
+        return vpnBookMemoryCache;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading local data/vpnbook.json:', err);
+  }
+
+  return [];
+}
+
 export function sortByPing(servers: VpnServer[]): VpnServer[] {
   return [...servers].sort((a, b) => {
     const pingA = typeof a.ping === 'number' && a.ping > 0 ? a.ping : 999;
     const pingB = typeof b.ping === 'number' && b.ping > 0 ? b.ping : 999;
     return pingA - pingB;
   });
+}
+
+// Helper to commit any file directly to GitHub via API
+async function commitFileToGitHub(filePath: string, contentStr: string, commitMsg: string): Promise<boolean> {
+  const githubToken = process.env.GITHUB_TOKEN;
+  const githubRepo = process.env.GITHUB_REPO || 'prakasshbiswas/OnoraVPN-Servers';
+  const githubBranch = process.env.GITHUB_BRANCH || 'main';
+
+  if (!githubToken || !githubRepo) return false;
+
+  try {
+    const getFileRes = await fetch(
+      `https://api.github.com/repos/${githubRepo}/contents/${filePath}?ref=${githubBranch}`,
+      {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'VPNx-Admin',
+        },
+      }
+    );
+
+    let sha: string | undefined;
+    if (getFileRes.ok) {
+      const fileInfo = await getFileRes.json();
+      sha = fileInfo.sha;
+    }
+
+    const contentBase64 = Buffer.from(contentStr).toString('base64');
+
+    const commitRes = await fetch(
+      `https://api.github.com/repos/${githubRepo}/contents/${filePath}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'VPNx-Admin',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: commitMsg,
+          content: contentBase64,
+          sha,
+          branch: githubBranch,
+        }),
+      }
+    );
+
+    if (!commitRes.ok) {
+      const errorText = await commitRes.text();
+      console.error(`GitHub commit failed for ${filePath}:`, errorText);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`Failed to commit ${filePath} to GitHub repo:`, err);
+    return false;
+  }
 }
 
 // Write servers to local disk, in-memory cache, and GitHub (if configured)
@@ -107,62 +232,44 @@ export async function persistServers(servers: VpnServer[]): Promise<boolean> {
     console.warn('Could not write to local file system (likely running on read-only serverless):', err);
   }
 
-
-  // 2. Commit to GitHub repository if configured
-  const githubToken = process.env.GITHUB_TOKEN;
-  const githubRepo = process.env.GITHUB_REPO || 'prakasshbiswas/OnoraVPN-Servers';
-  const githubBranch = process.env.GITHUB_BRANCH || 'main';
+  // 3. Commit to GitHub
   const githubFilePath = process.env.GITHUB_FILE_PATH || 'data/servers.json';
+  await commitFileToGitHub(
+    githubFilePath,
+    JSON.stringify(sorted, null, 2),
+    `chore(vpn): update servers.json [${servers.length} servers]`
+  );
 
-  if (githubToken && githubRepo) {
-    try {
-      // First get current file SHA
-      const getFileRes = await fetch(
-        `https://api.github.com/repos/${githubRepo}/contents/${githubFilePath}?ref=${githubBranch}`,
-        {
-          headers: {
-            Authorization: `Bearer ${githubToken}`,
-            Accept: 'application/vnd.github.v3+json',
-            'User-Agent': 'VPNx-Admin',
-          },
-        }
-      );
+  return true;
+}
 
-      let sha: string | undefined;
-      if (getFileRes.ok) {
-        const fileInfo = await getFileRes.json();
-        sha = fileInfo.sha;
-      }
+// Write dedicated VPNBook servers to local disk, in-memory cache, and GitHub
+export async function persistVpnBookServers(servers: VpnServer[]): Promise<boolean> {
+  const sorted = sortByPing(servers);
+  vpnBookMemoryCache = sorted;
 
-      const contentBase64 = Buffer.from(JSON.stringify(servers, null, 2)).toString('base64');
+  // 1. Write to /tmp/vpnbook.json
+  try {
+    fs.writeFileSync(VPNBOOK_TMP_FILE_PATH, JSON.stringify(sorted, null, 2), 'utf-8');
+  } catch {}
 
-      const commitRes = await fetch(
-        `https://api.github.com/repos/${githubRepo}/contents/${githubFilePath}`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${githubToken}`,
-            Accept: 'application/vnd.github.v3+json',
-            'User-Agent': 'VPNx-Admin',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: `chore(vpn): update servers.json [${servers.length} servers]`,
-            content: contentBase64,
-            sha,
-            branch: githubBranch,
-          }),
-        }
-      );
-
-      if (!commitRes.ok) {
-        const errorText = await commitRes.text();
-        console.error('GitHub commit failed:', errorText);
-      }
-    } catch (err) {
-      console.error('Failed to commit to GitHub repo:', err);
+  // 2. Write to data/vpnbook.json
+  try {
+    const dir = path.dirname(VPNBOOK_DATA_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
+    fs.writeFileSync(VPNBOOK_DATA_FILE_PATH, JSON.stringify(sorted, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not write to local data/vpnbook.json:', err);
   }
+
+  // 3. Commit to GitHub at data/vpnbook.json
+  await commitFileToGitHub(
+    'data/vpnbook.json',
+    JSON.stringify(sorted, null, 2),
+    `chore(vpn): update vpnbook.json [${servers.length} servers]`
+  );
 
   return true;
 }
@@ -179,7 +286,6 @@ export async function saveServer(
   let updatedList: VpnServer[] = [];
 
   if (replaceCountry) {
-    // If replacing, remove any existing server that matches the CountryCode OR matching ID
     const targetCc = server.countryCode.toUpperCase();
     const existingIndex = current.findIndex(
       (s) => s.countryCode.toUpperCase() === targetCc || s.id === server.id
@@ -188,7 +294,6 @@ export async function saveServer(
     if (existingIndex !== -1) {
       replaced = true;
       replacedId = current[existingIndex].id;
-      // Replace existing in place
       updatedList = [...current];
       updatedList[existingIndex] = {
         ...server,
@@ -204,7 +309,6 @@ export async function saveServer(
       ];
     }
   } else {
-    // Add new or update exact ID
     const existingIndex = current.findIndex((s) => s.id === server.id);
     if (existingIndex !== -1) {
       updatedList = [...current];

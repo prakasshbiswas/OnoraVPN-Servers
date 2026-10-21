@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchLiveVpnGateServers } from '@/lib/vpngate';
-import { getServers, persistServers, sortByPing } from '@/lib/storage';
+import { getServers, persistServers, getVpnBookServers, persistVpnBookServers, sortByPing } from '@/lib/storage';
 import { isAuthorizedRequest } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
-import { syncVpnBookServers } from '@/lib/vpnbook';
+import { syncVpnBookServers, syncDedicatedVpnBookFleet } from '@/lib/vpnbook';
 
 // Supports Vercel Cron, external crons (UptimeRobot, cron-job.org), and Admin session
 export async function GET(req: NextRequest) {
@@ -194,8 +194,23 @@ export async function GET(req: NextRequest) {
     // Sort final fleet by lowest ping first
     const finalSortedFleet = sortByPing(activeServers);
 
-    // 8. Persist the updated and cleaned fleet
+    // 8. Persist the main fleet (data/servers.json)
     await persistServers(finalSortedFleet);
+
+    // 9. Auto-Sync Dedicated data/vpnbook.json (Only the 10 VPNBook servers)
+    let dedicatedVpnBookResult = { count: 0, passwordUpdated: false, currentPassword: '' };
+    try {
+      const existingVpnBook = await getVpnBookServers();
+      const res = await syncDedicatedVpnBookFleet(existingVpnBook, 'tcp443');
+      await persistVpnBookServers(res.servers);
+      dedicatedVpnBookResult = {
+        count: res.servers.length,
+        passwordUpdated: res.passwordUpdated,
+        currentPassword: res.currentPassword,
+      };
+    } catch (vpnBookDedicatedErr) {
+      console.warn('[Sync Cron] Dedicated VPNBook sync non-fatal error:', vpnBookDedicatedErr);
+    }
 
     return NextResponse.json({
       success: true,
@@ -205,10 +220,12 @@ export async function GET(req: NextRequest) {
         deadServersPurged: removedServers.length,
         replacementsAdded: addedReplacements.length,
         serversUpdated: updatedServers.length,
-        vpnBook: {
-          added: vpnBookSyncResult.addedCount,
-          passwordsUpdated: vpnBookSyncResult.passwordUpdatedCount,
-          activePassword: vpnBookSyncResult.currentPassword,
+        vpnBookDedicated: {
+          file: 'data/vpnbook.json',
+          apiUrl: '/api/vpnbook/servers',
+          count: dedicatedVpnBookResult.count,
+          passwordUpdated: dedicatedVpnBookResult.passwordUpdated,
+          activePassword: dedicatedVpnBookResult.currentPassword,
         },
       },
       purged: removedServers.map((s) => ({ id: s.id, country: s.country, ip: s.ip })),

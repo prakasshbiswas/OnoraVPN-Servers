@@ -67,6 +67,7 @@ async function run() {
       };
 
       existingMap.set(id, serverObj);
+      vpnbookOnlyList.push(serverObj);
       added++;
       console.log(`✔ [${added}/10] ${meta.name} (${meta.country}) imported successfully.`);
     } catch (err) {
@@ -74,9 +75,17 @@ async function run() {
     }
   }
 
+  // 1. Write dedicated vpnbook.json
+  const vpnBookPath = path.join(process.cwd(), 'data', 'vpnbook.json');
+  fs.writeFileSync(vpnBookPath, JSON.stringify(vpnbookOnlyList, null, 2), 'utf8');
+  console.log(`✔ Dedicated data/vpnbook.json saved (${vpnbookOnlyList.length} servers).`);
+
+  // 2. Write combined servers.json
   const updatedFleet = Array.from(existingMap.values());
   fs.writeFileSync(serversPath, JSON.stringify(updatedFleet, null, 2), 'utf8');
-  console.log(`\n🎉 Success! Total fleet size is now: ${updatedFleet.length} servers.`);
+  console.log(`✔ Combined data/servers.json saved (${updatedFleet.length} servers).`);
+  console.log(`\n🎉 Success! Both files updated.`);
 }
 
+const vpnbookOnlyList = [];
 run().catch(console.error);

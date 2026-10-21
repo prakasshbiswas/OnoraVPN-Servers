@@ -219,3 +219,82 @@ export async function syncVpnBookServers(
     lastUpdated: creds.lastUpdated,
   };
 }
+
+/**
+ * Produces ONLY the dedicated VPNBook servers (10 servers) with fresh credentials
+ * for writing to data/vpnbook.json.
+ */
+export async function syncDedicatedVpnBookFleet(
+  existingVpnBookServers: VpnServer[],
+  preferredProtocol: 'tcp443' | 'tcp80' | 'udp53' | 'udp25000' = 'tcp443'
+): Promise<{
+  servers: VpnServer[];
+  passwordUpdated: boolean;
+  currentPassword: string;
+  lastUpdated?: string;
+}> {
+  const creds = await fetchLiveVpnBookCredentials();
+  const existingMap = new Map<string, VpnServer>();
+
+  for (const s of existingVpnBookServers) {
+    existingMap.set(s.id, s);
+  }
+
+  let passwordUpdated = false;
+  const resultServers: VpnServer[] = [];
+
+  for (const meta of VPNBOOK_SERVERS) {
+    const serverId = `vpnbook_${meta.id}`;
+    const existing = existingMap.get(serverId);
+
+    if (existing) {
+      const updated: VpnServer = { ...existing };
+      if (updated.password !== creds.password) {
+        updated.password = creds.password;
+        updated.updatedAt = new Date().toISOString();
+        passwordUpdated = true;
+      }
+      if (!updated.ovpnBase64) {
+        try {
+          updated.ovpnBase64 = await fetchVpnBookOvpn(meta.hostname, meta.ip, preferredProtocol);
+          updated.updatedAt = new Date().toISOString();
+        } catch (err) {
+          console.error(`[VPNBook Dedicated] Failed to fetch ovpn for ${meta.hostname}:`, err);
+        }
+      }
+      resultServers.push(updated);
+    } else {
+      try {
+        const ovpnBase64 = await fetchVpnBookOvpn(meta.hostname, meta.ip, preferredProtocol);
+        const newServer: VpnServer = {
+          id: serverId,
+          country: meta.country,
+          countryCode: meta.countryCode,
+          city: meta.city,
+          flag: meta.flag,
+          flagUrl: getFlagUrl(meta.countryCode),
+          premium: false,
+          username: creds.username,
+          password: creds.password,
+          ping: 35,
+          proto: preferredProtocol.startsWith('udp') ? 'udp' : 'tcp',
+          ip: meta.ip,
+          port: preferredProtocol === 'tcp443' ? 443 : preferredProtocol === 'tcp80' ? 80 : preferredProtocol === 'udp53' ? 53 : 25000,
+          ovpnBase64,
+          source: 'vpnbook',
+          updatedAt: new Date().toISOString(),
+        };
+        resultServers.push(newServer);
+      } catch (err) {
+        console.error(`[VPNBook Dedicated] Failed to initialize ${meta.hostname}:`, err);
+      }
+    }
+  }
+
+  return {
+    servers: resultServers,
+    passwordUpdated,
+    currentPassword: creds.password,
+    lastUpdated: creds.lastUpdated,
+  };
+}
