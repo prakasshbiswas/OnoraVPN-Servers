@@ -3,6 +3,7 @@ import { fetchLiveVpnGateServers } from '@/lib/vpngate';
 import { getServers, persistServers, sortByPing } from '@/lib/storage';
 import { isAuthorizedRequest } from '@/lib/auth';
 import { VpnServer } from '@/lib/types';
+import { syncVpnBookServers } from '@/lib/vpnbook';
 
 // Supports Vercel Cron, external crons (UptimeRobot, cron-job.org), and Admin session
 export async function GET(req: NextRequest) {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Inspect Current Fleet
     const currentFleet = await getServers();
-    const activeServers: VpnServer[] = [];
+    let activeServers: VpnServer[] = [];
     const removedServers: VpnServer[] = [];
     const updatedServers: VpnServer[] = [];
     const activeIps = new Set<string>();
@@ -40,6 +41,13 @@ export async function GET(req: NextRequest) {
       // If server has no IP (e.g. custom domain), keep it safe
       if (!server.ip) {
         activeServers.push(server);
+        continue;
+      }
+
+      // If server is from VPNBook, keep it protected (managed by VPNBook auto-sync below)
+      if (server.source === 'vpnbook' || server.id.startsWith('vpnbook_')) {
+        activeServers.push(server);
+        activeIps.add(server.ip);
         continue;
       }
 
@@ -169,10 +177,24 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // 7. Auto-Sync VPNBook Fleet & Rotate Password
+    let vpnBookSyncResult = { addedCount: 0, passwordUpdatedCount: 0, currentPassword: '' };
+    try {
+      const vpnBookResult = await syncVpnBookServers(activeServers, 'tcp443');
+      activeServers = vpnBookResult.updatedFleet;
+      vpnBookSyncResult = {
+        addedCount: vpnBookResult.addedCount,
+        passwordUpdatedCount: vpnBookResult.passwordUpdatedCount,
+        currentPassword: vpnBookResult.currentPassword,
+      };
+    } catch (vpnBookErr) {
+      console.warn('[Sync Cron] VPNBook sync non-fatal error:', vpnBookErr);
+    }
+
     // Sort final fleet by lowest ping first
     const finalSortedFleet = sortByPing(activeServers);
 
-    // 6. Persist the updated and cleaned fleet
+    // 8. Persist the updated and cleaned fleet
     await persistServers(finalSortedFleet);
 
     return NextResponse.json({
@@ -183,6 +205,11 @@ export async function GET(req: NextRequest) {
         deadServersPurged: removedServers.length,
         replacementsAdded: addedReplacements.length,
         serversUpdated: updatedServers.length,
+        vpnBook: {
+          added: vpnBookSyncResult.addedCount,
+          passwordsUpdated: vpnBookSyncResult.passwordUpdatedCount,
+          activePassword: vpnBookSyncResult.currentPassword,
+        },
       },
       purged: removedServers.map((s) => ({ id: s.id, country: s.country, ip: s.ip })),
       replacements: addedReplacements.map((s) => ({ id: s.id, country: s.country, ip: s.ip })),

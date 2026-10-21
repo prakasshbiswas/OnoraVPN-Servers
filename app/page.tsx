@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { StatsBar } from '@/components/StatsBar';
 import { OvpnUploader } from '@/components/OvpnUploader';
 import { VpnGateExplorer } from '@/components/VpnGateExplorer';
+import { VpnBookExplorer } from '@/components/VpnBookExplorer';
 import { ServerCard } from '@/components/ServerCard';
 import { ServerRow } from '@/components/ServerRow';
 import { DeleteModal } from '@/components/DeleteModal';
@@ -224,6 +225,9 @@ export default function DashboardPage() {
 
         {/* 1-Click VPN Gate Live Discovery */}
         <VpnGateExplorer onServerImported={loadServers} fleetServers={servers} />
+
+        {/* 1-Click VPNBook OpenVPN Fleet & Auto-Password Sync */}
+        <VpnBookExplorer onServerImported={loadServers} fleetServers={servers} />
 
         {/* Uploader Section */}
         <div className="mb-10">

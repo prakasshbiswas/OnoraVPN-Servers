@@ -17,6 +17,7 @@ export interface VpnServer {
   ovpnBase64?: string;
   ovpnConfig?: string;
   updatedAt?: string;
+  source?: 'oneconnect' | 'vpngate' | 'vpnbook' | string;
 }
 
 export interface ParseResult {
