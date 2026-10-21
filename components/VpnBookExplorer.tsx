@@ -13,6 +13,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Link2,
+  GitBranch,
 } from 'lucide-react';
 import { VpnServer } from '@/lib/types';
 
@@ -46,7 +48,10 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
   const [password, setPassword] = useState('dhnfcw2');
   const [lastUpdatedDate, setLastUpdatedDate] = useState<string | undefined>('Oct 18, 2026');
   const [servers, setServers] = useState<VpnBookServerStatus[]>([]);
-  const [copied, setCopied] = useState(false);
+  const [copiedPass, setCopiedPass] = useState(false);
+  const [copiedApi, setCopiedApi] = useState(false);
+  const [copiedGithub, setCopiedGithub] = useState(false);
+  const [copiedCron, setCopiedCron] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const fetchStatus = async () => {
@@ -79,8 +84,31 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
   const handleCopyPassword = () => {
     if (!password) return;
     navigator.clipboard.writeText(password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedPass(true);
+    setTimeout(() => setCopiedPass(false), 2000);
+  };
+
+  const handleCopyApiUrl = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://oneioovpn.vercel.app';
+    const url = `${origin}/api/vpnbook/servers`;
+    navigator.clipboard.writeText(url);
+    setCopiedApi(true);
+    setTimeout(() => setCopiedApi(false), 2000);
+  };
+
+  const handleCopyGithubUrl = () => {
+    const url = 'https://raw.githubusercontent.com/prakasshbiswas/OnoraVPN-Servers/main/data/vpnbook.json';
+    navigator.clipboard.writeText(url);
+    setCopiedGithub(true);
+    setTimeout(() => setCopiedGithub(false), 2000);
+  };
+
+  const handleCopyCronUrl = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://oneioovpn.vercel.app';
+    const url = `${origin}/api/cron/sync?key=admin123`;
+    navigator.clipboard.writeText(url);
+    setCopiedCron(true);
+    setTimeout(() => setCopiedCron(false), 2000);
   };
 
   const handleSyncAll = async () => {
@@ -136,7 +164,28 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Copy VPNBook API URL */}
+            <button
+              onClick={handleCopyApiUrl}
+              className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-blue-200 dark:border-blue-800/70 bg-blue-50/60 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-xs"
+              title="Copy /api/vpnbook/servers JSON endpoint"
+            >
+              {copiedApi ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Link2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+              <span>{copiedApi ? 'API Copied!' : 'Copy API URL'}</span>
+            </button>
+
+            {/* Copy GitHub Raw URL */}
+            <button
+              onClick={handleCopyGithubUrl}
+              className="inline-flex items-center space-x-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition shadow-xs"
+              title="Copy GitHub Raw data/vpnbook.json URL"
+            >
+              {copiedGithub ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <GitBranch className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{copiedGithub ? 'GitHub URL Copied!' : 'Copy GitHub URL'}</span>
+            </button>
+
+            {/* Sync All Button */}
             <button
               onClick={handleSyncAll}
               disabled={importing}
@@ -147,6 +196,7 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
               <span>{importing ? 'Syncing...' : inFleetCount === 10 ? 'Update Passwords' : '1-Click Import All'}</span>
             </button>
 
+            {/* Collapse toggle */}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
@@ -157,7 +207,7 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
           </div>
         </div>
 
-        {/* Live Credential Banner */}
+        {/* Live Credential & Quick Links Banner */}
         <div className="mt-3.5 pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-3">
             <span className="text-slate-500 dark:text-slate-400 flex items-center space-x-1">
@@ -176,7 +226,7 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded"
                 title="Copy password"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedPass ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </span>
           </div>
@@ -195,6 +245,35 @@ export const VpnBookExplorer: React.FC<VpnBookExplorerProps> = ({
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
+        </div>
+
+        {/* Dedicated Copy Links Strip */}
+        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="text-slate-400 font-medium">Quick Copy Links:</span>
+          
+          <button
+            onClick={handleCopyApiUrl}
+            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition"
+          >
+            {copiedApi ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            <span className="font-mono">/api/vpnbook/servers</span>
+          </button>
+
+          <button
+            onClick={handleCopyGithubUrl}
+            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition"
+          >
+            {copiedGithub ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            <span className="font-mono">GitHub Raw (data/vpnbook.json)</span>
+          </button>
+
+          <button
+            onClick={handleCopyCronUrl}
+            className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 hover:text-cyan-600 dark:hover:text-cyan-400 transition"
+          >
+            {copiedCron ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            <span className="font-mono">UptimeRobot Cron URL</span>
+          </button>
         </div>
 
         {statusMessage && (
