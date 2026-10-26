@@ -34,8 +34,8 @@ export default function DashboardPage() {
   const [servers, setServers] = useState<VpnServer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'free' | 'vip'>('all');
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'vpngate' | 'vpnbook' | 'custom'>('all');
-  const [activeTab, setActiveTab] = useState<'all' | 'vpngate' | 'vpnbook' | 'custom'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'vpngate' | 'vpnbook' | 'oneconnect' | 'custom'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'vpngate' | 'vpnbook' | 'oneconnect' | 'custom'>('all');
   const [viewMode, setViewMode] = useState<'rows' | 'grid'>('rows'); // Default to Rows!
   const [search, setSearch] = useState('');
 
@@ -177,18 +177,20 @@ export default function DashboardPage() {
   const counts = useMemo(() => {
     let vpngate = 0;
     let vpnbook = 0;
+    let oneconnect = 0;
     let custom = 0;
     for (const s of servers) {
       const src = resolveServerSource(s);
       if (src === 'vpngate') vpngate++;
       else if (src === 'vpnbook') vpnbook++;
+      else if (src === 'oneconnect') oneconnect++;
       else custom++;
     }
-    return { vpngate, vpnbook, custom, total: servers.length };
+    return { vpngate, vpnbook, oneconnect, custom, total: servers.length };
   }, [servers]);
 
   // Tab change handler (syncs view mode and fleet filter)
-  const handleTabChange = (tab: 'all' | 'vpngate' | 'vpnbook' | 'custom') => {
+  const handleTabChange = (tab: 'all' | 'vpngate' | 'vpnbook' | 'oneconnect' | 'custom') => {
     setActiveTab(tab);
     setSourceFilter(tab);
   };
@@ -339,6 +341,28 @@ export default function DashboardPage() {
               </span>
             </button>
 
+            {/* OneConnect VIP Fleet */}
+            <button
+              onClick={() => handleTabChange('oneconnect')}
+              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                activeTab === 'oneconnect'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>OneConnect VIP</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  activeTab === 'oneconnect'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                }`}
+              >
+                {counts.oneconnect}
+              </span>
+            </button>
+
             {/* Manual Upload */}
             <button
               onClick={() => handleTabChange('custom')}
@@ -371,10 +395,41 @@ export default function DashboardPage() {
                 ? '⚡ VPN Gate Live View'
                 : activeTab === 'vpnbook'
                 ? '📖 VPNBook 10-Server Fleet View'
+                : activeTab === 'oneconnect'
+                ? '⭐ OneConnect VIP Master Fleet'
                 : '📤 Custom .ovpn Uploader'}
             </span>
           </div>
         </div>
+
+        {/* OneConnect Fleet Sync Banner (Shown in 'all' or 'oneconnect' view) */}
+        {(activeTab === 'all' || activeTab === 'oneconnect') && counts.oneconnect > 0 && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>OneConnect VIP Master Fleet</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                      {counts.oneconnect} Servers Active
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Sourced via Master App (<code>com.oneiootech.ixvpn</code>) and ready for multi-app distribution without SDK package name restrictions.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">
+                  Live & Decrypted
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1. VPN Gate Live Discovery (Shown in 'all' or 'vpngate' view) */}
         {(activeTab === 'all' || activeTab === 'vpngate') && (

@@ -33,9 +33,12 @@ export interface ParseResult {
   existingServer?: VpnServer | null;
 }
 
-export type ServerSource = 'vpngate' | 'vpnbook' | 'custom';
+export type ServerSource = 'vpngate' | 'vpnbook' | 'oneconnect' | 'custom';
 
 export function resolveServerSource(server: VpnServer): ServerSource {
+  if (server.source === 'oneconnect' || server.id?.startsWith('oc_') || server.id?.startsWith('oneconnect_')) {
+    return 'oneconnect';
+  }
   if (server.source === 'vpnbook' || server.id?.startsWith('vpnbook_') || server.username === 'vpnbook') {
     return 'vpnbook';
   }

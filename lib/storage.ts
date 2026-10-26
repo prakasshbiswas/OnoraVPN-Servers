@@ -351,3 +351,45 @@ export async function toggleServerPremium(id: string): Promise<VpnServer[]> {
   await persistServers(updated);
   return updated;
 }
+
+// Bulk merge or update OneConnect servers synced from the Master App
+export async function mergeOneConnectFleet(
+  incoming: VpnServer[]
+): Promise<{ added: number; updated: number; total: number }> {
+  const current = await getServers();
+  let added = 0;
+  let updated = 0;
+
+  // Map existing servers by ID
+  const map = new Map<string, VpnServer>();
+  for (const s of current) {
+    map.set(s.id, s);
+  }
+
+  for (const item of incoming) {
+    if (!item.id) continue;
+    const formattedId = item.id.startsWith('oc_') ? item.id : `oc_${item.id}`;
+    const serverObj: VpnServer = {
+      ...item,
+      id: formattedId,
+      source: 'oneconnect',
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (map.has(formattedId)) {
+      map.set(formattedId, {
+        ...map.get(formattedId)!,
+        ...serverObj,
+      });
+      updated++;
+    } else {
+      map.set(formattedId, serverObj);
+      added++;
+    }
+  }
+
+  const updatedList = Array.from(map.values());
+  await persistServers(updatedList);
+  return { added, updated, total: updatedList.length };
+}
+

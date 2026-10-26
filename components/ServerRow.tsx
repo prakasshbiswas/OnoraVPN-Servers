@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Lock, Unlock, Copy, Check, Globe, Activity, Wifi, Zap, Shield, UploadCloud } from 'lucide-react';
+import { Trash2, Lock, Unlock, Copy, Check, Globe, Activity, Wifi, Zap, Shield, UploadCloud, Sparkles } from 'lucide-react';
 import { VpnServer, resolveServerSource } from '@/lib/types';
 import { getFlagUrl } from '@/lib/geoip';
 
@@ -56,7 +56,15 @@ export const ServerRow: React.FC<ServerRowProps> = ({
               {server.countryCode}
             </span>
             {/* Provider Badge */}
-            {source === 'vpngate' ? (
+            {source === 'oneconnect' ? (
+              <span
+                title="Sourced from OneConnect VIP Fleet (Synced from Master App)"
+                className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 shrink-0"
+              >
+                <Sparkles className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                <span>OneConnect</span>
+              </span>
+            ) : source === 'vpngate' ? (
               <span
                 title="Sourced from VPN Gate Live Discovery"
                 className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 shrink-0"
