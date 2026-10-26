@@ -393,3 +393,13 @@ export async function mergeOneConnectFleet(
   return { added, updated, total: updatedList.length };
 }
 
+// Read dedicated OneConnect servers from fleet
+export async function getOneConnectServers(): Promise<VpnServer[]> {
+  const fleet = await getServers();
+  const oneConnectServers = fleet.filter(
+    (s) => s.source === 'oneconnect' || s.id.startsWith('oc_')
+  );
+  return sortByPing(oneConnectServers);
+}
+
+
